@@ -7,7 +7,8 @@
  * 2. 地鼠随机出现逻辑
  * 3. 点击判定与计分系统
  * 4. 连击检测与奖励
- * 5. 音效与动效
+ * 5. 音效系统（Web Audio API）
+ * 6. 动效
  */
 
 // ============================================
@@ -19,8 +20,132 @@ const GAME_CONFIG = {
     MOLE_STAY_DURATION: 1000,  // 地鼠停留时间（毫秒）
     BASE_SCORE: 10,           // 基础得分
     COMBO_BONUS: 5,           // 连击奖励分数
-    COMBO_THRESHOLD: 3        // 触发连击的最小连续击中数
+    COMBO_THRESHOLD: 3,       // 触发连击的最小连续击中数
+    AUDIO_ENABLED: true       // 音效开关
 };
+
+// ============================================
+// 音频系统
+// ============================================
+let audioContext = null;
+
+/**
+ * 初始化音频上下文
+ * 由于浏览器自动播放策略，需要在用户交互后初始化
+ */
+function initAudio() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+}
+
+/**
+ * 生成音效 - 使用 Web Audio API 合成声音
+ * @param {string} type - 音效类型：'hit', 'start', 'end', 'combo'
+ */
+function playSound(type) {
+    if (!GAME_CONFIG.AUDIO_ENABLED || !audioContext) return;
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    const now = audioContext.currentTime;
+    
+    switch (type) {
+        case 'hit':
+            // 击中音效：短促的高频音
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, now);
+            oscillator.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+            gainNode.gain.setValueAtTime(0.3, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            oscillator.start(now);
+            oscillator.stop(now + 0.1);
+            break;
+            
+        case 'hitCombo':
+            // 连击击中音效：更欢快的双音
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(600, now);
+            oscillator.frequency.setValueAtTime(900, now + 0.08);
+            gainNode.gain.setValueAtTime(0.25, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            oscillator.start(now);
+            oscillator.stop(now + 0.2);
+            break;
+            
+        case 'start':
+            // 开始音效：上升的琶音
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(400, now);
+            oscillator.frequency.linearRampToValueAtTime(800, now + 0.15);
+            gainNode.gain.setValueAtTime(0.2, now);
+            gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
+            oscillator.start(now);
+            oscillator.stop(now + 0.3);
+            
+            // 添加第二个音符
+            const osc2 = audioContext.createOscillator();
+            const gain2 = audioContext.createGain();
+            osc2.connect(gain2);
+            gain2.connect(audioContext.destination);
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(600, now + 0.1);
+            osc2.frequency.linearRampToValueAtTime(1000, now + 0.25);
+            gain2.gain.setValueAtTime(0.2, now + 0.1);
+            gain2.gain.linearRampToValueAtTime(0, now + 0.35);
+            osc2.start(now + 0.1);
+            osc2.stop(now + 0.35);
+            break;
+            
+        case 'end':
+            // 结束音效：下降的音调
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(600, now);
+            oscillator.frequency.exponentialRampToValueAtTime(200, now + 0.5);
+            gainNode.gain.setValueAtTime(0.3, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            oscillator.start(now);
+            oscillator.stop(now + 0.5);
+            break;
+            
+        case 'excellent':
+            // 优秀成绩音效：欢快的和弦
+            playChord([523.25, 659.25, 783.99], 'sine', 0.4); // C 大调和弦
+            break;
+    }
+}
+
+/**
+ * 播放和弦音效
+ * @param {number[]} frequencies - 频率数组
+ * @param {string} type - 波形类型
+ * @param {number} duration - 持续时间（秒）
+ */
+function playChord(frequencies, type, duration) {
+    if (!audioContext) return;
+    
+    const now = audioContext.currentTime;
+    const gainNode = audioContext.createGain();
+    gainNode.connect(audioContext.destination);
+    gainNode.gain.setValueAtTime(0.2, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + duration);
+    
+    frequencies.forEach(freq => {
+        const osc = audioContext.createOscillator();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        osc.connect(gainNode);
+        osc.start(now);
+        osc.stop(now + duration);
+    });
+}
 
 // ============================================
 // 游戏状态
@@ -92,6 +217,9 @@ function initGrid() {
  * 开始游戏
  */
 function startGame() {
+    // 初始化音频（必须在用户交互后调用）
+    initAudio();
+    
     // 重置游戏状态
     gameState = {
         score: 0,
@@ -113,6 +241,9 @@ function startGame() {
     // 隐藏开始界面
     elements.startOverlay.classList.add('hidden');
     elements.gameOverOverlay.classList.add('hidden');
+    
+    // 播放开始音效
+    playSound('start');
     
     // 启动游戏倒计时
     startGameTimer();
@@ -230,11 +361,18 @@ function handleMoleClick(index) {
     // 击中地鼠
     mole.classList.add('hit');
     
-    // 计算得分
+    // 计算得分（会更新连击数）
     calculateScore();
     
     // 更新击中次数
     gameState.hits++;
+    
+    // 播放击中音效（根据连击数选择不同音效）
+    if (gameState.combo >= GAME_CONFIG.COMBO_THRESHOLD) {
+        playSound('hitCombo');
+    } else {
+        playSound('hit');
+    }
     
     // 显示得分飘字
     showScorePopup(index);
@@ -329,6 +467,14 @@ function endGame() {
     const message = getEndMessage(gameState.score);
     elements.endMessage.textContent = message.text;
     elements.endMessage.className = `message ${message.class}`;
+    
+    // 播放结束音效
+    playSound('end');
+    
+    // 如果成绩优秀，播放特殊音效
+    if (gameState.score >= 300) {
+        setTimeout(() => playSound('excellent'), 300);
+    }
     
     // 显示结算界面
     elements.gameOverOverlay.classList.remove('hidden');
