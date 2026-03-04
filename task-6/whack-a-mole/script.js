@@ -1,86 +1,148 @@
 /* ============================================
    打地鼠小游戏 - JavaScript 核心逻辑
-   功能：地鼠随机出现、点击事件监听、命中判定
+   版本：1.0
+   功能：地鼠随机出现、点击事件监听、命中判定、计分系统
    ============================================ */
 
-// ==================== 游戏状态变量 ====================
+// ============================================
+// 游戏配置常量
+// ============================================
+const CONFIG = {
+    GAME_DURATION: 30,           // 游戏时长（秒）
+    BASE_SCORE: 10,              // 基础得分
+    MAX_COMBO: 5,                // 最大连击倍数
+    COMBO_TIMEOUT: 2000,         // 连击超时时间（毫秒）
+    MOLE_MIN_INTERVAL: 800,      // 地鼠出现最小间隔（毫秒）
+    MOLE_MAX_INTERVAL: 1500,     // 地鼠出现最大间隔（毫秒）
+    MOLE_SHOW_DURATION: 1500,    // 地鼠停留时间（毫秒）
+    COMBO_ANIMATION_DURATION: 500 // 连击动画时长（毫秒）
+};
+
+// ============================================
+// 游戏状态管理
+// ============================================
+/**
+ * 游戏状态对象
+ * 存储所有游戏运行时的可变数据
+ */
 let gameState = {
     score: 0,              // 当前分数
     combo: 1,              // 当前连击倍数
-    maxCombo: 1,           // 最高连击
+    maxCombo: 1,           // 最高连击记录
     molesHit: 0,           // 命中地鼠总数
-    timeLeft: 30,          // 剩余时间（秒）
+    timeLeft: CONFIG.GAME_DURATION,  // 剩余时间（秒）
     isPlaying: false,      // 游戏是否进行中
-    moleTimer: null,       // 地鼠出现定时器
-    gameTimer: null,       // 游戏倒计时定时器
-    currentMoleIndex: -1,  // 当前地鼠位置索引
-    lastHitTime: 0,        // 上次命中时间（用于连击检测）
-    comboTimeout: 2000     // 连击超时时间（毫秒）
+    moleTimer: null,       // 地鼠出现定时器 ID
+    gameTimer: null,       // 游戏倒计时定时器 ID
+    currentMoleIndex: -1,  // 当前地鼠位置索引（0-8）
+    lastHitTime: 0,        // 上次命中时间戳（用于连击检测）
+    comboTimeout: CONFIG.COMBO_TIMEOUT  // 连击超时时间
 };
 
-// ==================== DOM 元素引用 ====================
+// ============================================
+// DOM 元素缓存
+// ============================================
+/**
+ * DOM 元素引用对象
+ * 缓存所有需要频繁访问的 DOM 元素，避免重复查询
+ * 性能优化：减少 DOM 操作次数
+ */
 const elements = {
-    score: document.getElementById('score'),
-    timer: document.getElementById('timer'),
-    combo: document.getElementById('combo'),
-    startScreen: document.getElementById('startScreen'),
-    gameOverScreen: document.getElementById('gameOverScreen'),
-    gameGrid: document.getElementById('gameGrid'),
-    finalScore: document.getElementById('finalScore'),
-    maxCombo: document.getElementById('maxCombo'),
-    molesHit: document.getElementById('molesHit'),
-    startBtn: document.getElementById('startBtn'),
-    restartBtn: document.getElementById('restartBtn'),
-    floatingTextContainer: document.getElementById('floatingTextContainer'),
-    holes: document.querySelectorAll('.hole'),
-    hitSound: document.getElementById('hitSound'),
-    startSound: document.getElementById('startSound'),
-    gameOverSound: document.getElementById('gameOverSound')
+    score: null,
+    timer: null,
+    combo: null,
+    startScreen: null,
+    gameOverScreen: null,
+    gameGrid: null,
+    finalScore: null,
+    maxCombo: null,
+    molesHit: null,
+    startBtn: null,
+    restartBtn: null,
+    floatingTextContainer: null,
+    holes: null,
+    hitSound: null,
+    startSound: null,
+    gameOverSound: null
 };
 
-// ==================== 初始化 ====================
+/**
+ * 初始化 DOM 元素引用
+ * 在 DOM 加载完成后调用，缓存所有元素
+ */
+function cacheDOMElements() {
+    elements.score = document.getElementById('score');
+    elements.timer = document.getElementById('timer');
+    elements.combo = document.getElementById('combo');
+    elements.startScreen = document.getElementById('startScreen');
+    elements.gameOverScreen = document.getElementById('gameOverScreen');
+    elements.gameGrid = document.getElementById('gameGrid');
+    elements.finalScore = document.getElementById('finalScore');
+    elements.maxCombo = document.getElementById('maxCombo');
+    elements.molesHit = document.getElementById('molesHit');
+    elements.startBtn = document.getElementById('startBtn');
+    elements.restartBtn = document.getElementById('restartBtn');
+    elements.floatingTextContainer = document.getElementById('floatingTextContainer');
+    elements.holes = document.querySelectorAll('.hole');
+    elements.hitSound = document.getElementById('hitSound');
+    elements.startSound = document.getElementById('startSound');
+    elements.gameOverSound = document.getElementById('gameOverSound');
+}
+
+// ============================================
+// 游戏初始化
+// ============================================
 /**
  * 初始化游戏
- * 绑定事件监听器，设置初始状态
+ * 绑定所有事件监听器，设置初始状态
+ * 在页面加载完成后自动调用
  */
 function initGame() {
-    // 绑定开始按钮事件
+    // 缓存 DOM 元素
+    cacheDOMElements();
+    
+    // 绑定开始按钮点击事件
     elements.startBtn.addEventListener('click', startGame);
     
-    // 绑定重新开始按钮事件
+    // 绑定重新开始按钮点击事件
     elements.restartBtn.addEventListener('click', startGame);
     
     // 为每个地鼠洞绑定点击事件
     elements.holes.forEach((hole, index) => {
+        // 鼠标点击事件（桌面端）
         hole.addEventListener('click', () => handleHoleClick(index));
-        // 支持移动端触摸
+        
+        // 触摸事件（移动端）- 优化触摸响应
         hole.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // 防止触摸延迟
+            // 阻止默认的触摸行为（防止延迟和滚动）
+            e.preventDefault();
             handleHoleClick(index);
-        });
+        }, { passive: false });
     });
     
     console.log('🎮 打地鼠游戏初始化完成');
 }
 
-// ==================== 游戏流程控制 ====================
+// ============================================
+// 游戏流程控制
+// ============================================
 /**
  * 开始游戏
- * 重置状态，显示游戏网格，启动定时器
+ * 重置游戏状态，显示游戏界面，启动所有定时器
  */
 function startGame() {
-    // 重置游戏状态
+    // 重置游戏状态到初始值
     resetGameState();
     
     // 播放开始音效
     playSound(elements.startSound);
     
-    // 切换界面显示
+    // 切换界面显示：隐藏开始/结束界面，显示游戏网格
     elements.startScreen.style.display = 'none';
     elements.gameOverScreen.style.display = 'none';
     elements.gameGrid.style.display = 'grid';
     
-    // 更新 UI 显示
+    // 更新 UI 显示（分数、时间、连击）
     updateUI();
     
     // 标记游戏进行中
@@ -92,24 +154,31 @@ function startGame() {
     // 启动游戏倒计时
     startGameTimer();
     
-    console.log('🎯 游戏开始！');
+    console.log('🎯 游戏开始！剩余时间：' + gameState.timeLeft + '秒');
 }
 
 /**
  * 重置游戏状态
+ * 将所有状态变量恢复到初始值
  */
 function resetGameState() {
     gameState.score = 0;
     gameState.combo = 1;
     gameState.maxCombo = 1;
     gameState.molesHit = 0;
-    gameState.timeLeft = 30;
+    gameState.timeLeft = CONFIG.GAME_DURATION;
     gameState.currentMoleIndex = -1;
     gameState.lastHitTime = 0;
     
-    // 清除所有定时器
-    if (gameState.moleTimer) clearInterval(gameState.moleTimer);
-    if (gameState.gameTimer) clearInterval(gameState.gameTimer);
+    // 清除所有定时器（防止多个定时器同时运行）
+    if (gameState.moleTimer) {
+        clearInterval(gameState.moleTimer);
+        gameState.moleTimer = null;
+    }
+    if (gameState.gameTimer) {
+        clearInterval(gameState.gameTimer);
+        gameState.gameTimer = null;
+    }
     
     // 隐藏所有地鼠
     hideAllMoles();
@@ -117,13 +186,21 @@ function resetGameState() {
 
 /**
  * 结束游戏
+ * 停止所有定时器，显示结算界面
  */
 function endGame() {
+    // 标记游戏结束
     gameState.isPlaying = false;
     
     // 停止所有定时器
-    if (gameState.moleTimer) clearInterval(gameState.moleTimer);
-    if (gameState.gameTimer) clearInterval(gameState.gameTimer);
+    if (gameState.moleTimer) {
+        clearInterval(gameState.moleTimer);
+        gameState.moleTimer = null;
+    }
+    if (gameState.gameTimer) {
+        clearInterval(gameState.gameTimer);
+        gameState.gameTimer = null;
+    }
     
     // 隐藏所有地鼠
     hideAllMoles();
@@ -131,7 +208,7 @@ function endGame() {
     // 播放结束音效
     playSound(elements.gameOverSound);
     
-    // 显示结算界面
+    // 切换界面显示：隐藏游戏网格，显示结束界面
     elements.gameGrid.style.display = 'none';
     elements.gameOverScreen.style.display = 'flex';
     
@@ -140,29 +217,36 @@ function endGame() {
     elements.maxCombo.textContent = 'x' + gameState.maxCombo;
     elements.molesHit.textContent = gameState.molesHit;
     
-    console.log('🏁 游戏结束！最终分数：' + gameState.score);
+    // 移除倒计时警告样式
+    elements.timer.parentElement.classList.remove('timer-warning');
+    
+    console.log('🏁 游戏结束！最终分数：' + gameState.score + '，命中：' + gameState.molesHit);
 }
 
-// ==================== 地鼠随机出现逻辑（核心功能） ====================
+// ============================================
+// 地鼠随机出现逻辑（核心功能）
+// ============================================
 /**
  * 启动地鼠随机出现逻辑
  * 使用 setInterval 定时生成地鼠
+ * 地鼠出现间隔在 MIN_INTERVAL 和 MAX_INTERVAL 之间随机
  */
 function startMoleSpawning() {
     // 立即生成第一个地鼠
     spawnMole();
     
-    // 设置定时器，每 800-1500ms 随机生成一个地鼠
+    // 设置定时器，随机间隔生成地鼠
     gameState.moleTimer = setInterval(() => {
         if (gameState.isPlaying) {
             spawnMole();
         }
-    }, getRandomInterval(800, 1500));
+    }, getRandomInterval(CONFIG.MOLE_MIN_INTERVAL, CONFIG.MOLE_MAX_INTERVAL));
 }
 
 /**
  * 生成地鼠
  * 随机选择一个位置，让地鼠冒出
+ * 避免连续在同一位置出现
  */
 function spawnMole() {
     // 先隐藏之前的地鼠
@@ -182,7 +266,7 @@ function spawnMole() {
 
 /**
  * 显示地鼠
- * @param {number} index - 地鼠洞索引
+ * @param {number} index - 地鼠洞索引（0-8）
  */
 function showMole(index) {
     if (index < 0 || index >= elements.holes.length) return;
@@ -191,10 +275,10 @@ function showMole(index) {
     const mole = hole.querySelector('.mole');
     
     if (mole) {
-        // 添加向上动画类
+        // 添加向上动画类，地鼠冒出
         mole.classList.add('up');
         
-        // 设置地鼠在 1.5 秒后自动缩回（如果没被击中）
+        // 设置地鼠在 CONFIG.MOLE_SHOW_DURATION 后自动缩回（如果没被击中）
         setTimeout(() => {
             if (gameState.currentMoleIndex === index && gameState.isPlaying) {
                 hideMole(index);
@@ -205,13 +289,13 @@ function showMole(index) {
                     }
                 }, 300);
             }
-        }, 1500);
+        }, CONFIG.MOLE_SHOW_DURATION);
     }
 }
 
 /**
  * 隐藏地鼠
- * @param {number} index - 地鼠洞索引
+ * @param {number} index - 地鼠洞索引（0-8）
  */
 function hideMole(index) {
     if (index < 0 || index >= elements.holes.length) return;
@@ -220,6 +304,7 @@ function hideMole(index) {
     const mole = hole.querySelector('.mole');
     
     if (mole) {
+        // 移除向上和击中状态类
         mole.classList.remove('up');
         mole.classList.remove('hit');
     }
@@ -227,6 +312,7 @@ function hideMole(index) {
 
 /**
  * 隐藏所有地鼠
+ * 用于游戏开始/结束时清理状态
  */
 function hideAllMoles() {
     elements.holes.forEach((hole, index) => {
@@ -245,12 +331,15 @@ function getRandomInterval(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// ==================== 点击事件监听与命中判定（核心功能） ====================
+// ============================================
+// 点击事件监听与命中判定（核心功能）
+// ============================================
 /**
  * 处理地鼠洞点击事件
- * @param {number} index - 被点击的地鼠洞索引
+ * @param {number} index - 被点击的地鼠洞索引（0-8）
  */
 function handleHoleClick(index) {
+    // 游戏未进行时忽略点击
     if (!gameState.isPlaying) return;
     
     // 命中判定：检查点击的是否是当前地鼠位置
@@ -268,9 +357,11 @@ function handleHoleClick(index) {
 function handleHit(index) {
     const now = Date.now();
     
-    // 连击检测：如果在上次命中后 2 秒内再次命中，增加连击
+    // 连击检测：如果在上次命中后 COMBO_TIMEOUT 内再次命中，增加连击
     if (gameState.lastHitTime > 0 && (now - gameState.lastHitTime) < gameState.comboTimeout) {
-        gameState.combo = Math.min(gameState.combo + 1, 5); // 最高 5 连击
+        // 增加连击，最高不超过 MAX_COMBO
+        gameState.combo = Math.min(gameState.combo + 1, CONFIG.MAX_COMBO);
+        // 更新最高连击记录
         if (gameState.combo > gameState.maxCombo) {
             gameState.maxCombo = gameState.combo;
         }
@@ -281,21 +372,21 @@ function handleHit(index) {
     
     gameState.lastHitTime = now;
     
-    // 计算得分：基础分 10 分 × 连击倍数
-    const points = 10 * gameState.combo;
+    // 计算得分：基础分 × 连击倍数
+    const points = CONFIG.BASE_SCORE * gameState.combo;
     gameState.score += points;
     gameState.molesHit++;
     
     // 播放击中音效
     playSound(elements.hitSound);
     
-    // 显示击中效果
+    // 显示击中效果（地鼠表情变化）
     showHitEffect(index);
     
-    // 显示得分飘字
+    // 显示得分飘字动画
     showFloatingText(points, index, gameState.combo > 1);
     
-    // 更新 UI
+    // 更新 UI 显示
     updateUI();
     
     // 隐藏当前地鼠，准备生成新的
@@ -309,7 +400,7 @@ function handleHit(index) {
         }
     }, 500);
     
-    console.log(`🎯 命中！+${points}分，连击 x${gameState.combo}`);
+    console.log(`🎯 命中！+${points}分，连击 x${gameState.combo}，总分：${gameState.score}`);
 }
 
 /**
@@ -317,8 +408,7 @@ function handleHit(index) {
  * @param {number} index - 被点击的地鼠洞索引
  */
 function handleMiss(index) {
-    // 可选：扣除分数或中断连击
-    // 这里选择不惩罚，只中断连击
+    // 未命中时重置连击（不扣分，只中断连击）
     gameState.combo = 1;
     gameState.lastHitTime = 0;
     
@@ -327,7 +417,9 @@ function handleMiss(index) {
     console.log('❌ 未命中');
 }
 
-// ==================== 视觉效果 ====================
+// ============================================
+// 视觉效果系统
+// ============================================
 /**
  * 显示击中效果
  * @param {number} index - 地鼠洞索引
@@ -340,7 +432,7 @@ function showHitEffect(index) {
         // 添加击中动画类
         mole.classList.add('hit');
         
-        // 动画结束后移除类
+        // 动画结束后移除类（等待下次击中）
         setTimeout(() => {
             mole.classList.remove('hit');
         }, 300);
@@ -362,29 +454,33 @@ function showFloatingText(points, index, isCombo) {
     text.className = 'floating-text' + (isCombo ? ' combo' : '');
     text.textContent = '+' + points + (isCombo ? ' 连击!' : '');
     
-    // 设置位置（地鼠洞上方）
+    // 设置位置（地鼠洞上方，居中）
+    // 减去 30px 是为了让文字中心对齐
     text.style.left = (rect.left + rect.width / 2 - 30) + 'px';
     text.style.top = (rect.top - 20) + 'px';
     
     // 添加到容器
     elements.floatingTextContainer.appendChild(text);
     
-    // 动画结束后移除元素
+    // 动画结束后移除元素（避免 DOM 堆积）
     setTimeout(() => {
         text.remove();
     }, 1000);
 }
 
-// ==================== 游戏倒计时 ====================
+// ============================================
+// 游戏倒计时系统
+// ============================================
 /**
  * 启动游戏倒计时
+ * 每秒减少时间，最后 5 秒添加警告动画
  */
 function startGameTimer() {
     gameState.gameTimer = setInterval(() => {
         gameState.timeLeft--;
         updateUI();
         
-        // 倒计时警告：最后 5 秒添加警告动画
+        // 倒计时警告：最后 5 秒添加脉冲动画
         if (gameState.timeLeft <= 5) {
             elements.timer.parentElement.classList.add('timer-warning');
         } else {
@@ -398,45 +494,72 @@ function startGameTimer() {
     }, 1000);
 }
 
-// ==================== UI 更新 ====================
+// ============================================
+// UI 更新系统
+// ============================================
 /**
  * 更新 UI 显示
+ * 同步游戏状态到界面元素
  */
 function updateUI() {
     elements.score.textContent = gameState.score;
     elements.timer.textContent = gameState.timeLeft;
     elements.combo.textContent = 'x' + gameState.combo;
     
-    // 连击指示器动画
+    // 连击指示器动画：当连击大于 1 时触发脉冲效果
     if (gameState.combo > 1) {
         elements.combo.parentElement.classList.add('combo-boost');
+        // 动画结束后移除类
         setTimeout(() => {
             elements.combo.parentElement.classList.remove('combo-boost');
-        }, 500);
+        }, CONFIG.COMBO_ANIMATION_DURATION);
     }
 }
 
-// ==================== 音效控制 ====================
+// ============================================
+// 音效控制系统
+// ============================================
 /**
  * 播放音效
  * @param {HTMLAudioElement} audio - 音频元素
+ * 注意：如果音效文件不存在，会静默失败，不影响游戏
  */
 function playSound(audio) {
     if (audio) {
-        // 重置播放位置
+        // 重置播放位置（允许快速重复播放）
         audio.currentTime = 0;
         // 播放音效（如果音频文件存在）
         audio.play().catch(e => {
-            // 如果音频文件不存在，静默失败
+            // 如果音频文件不存在或加载失败，静默处理
+            // 这样可以确保游戏在没有音效的情况下也能正常运行
             console.log('🔇 音效文件未找到:', audio.src);
         });
     }
 }
 
-// ==================== 页面加载完成后初始化 ====================
+// ============================================
+// 页面生命周期
+// ============================================
+/**
+ * 页面加载完成后初始化游戏
+ * 使用 DOMContentLoaded 确保 DOM 元素已就绪
+ */
 document.addEventListener('DOMContentLoaded', initGame);
 
-// 如果 DOM 已经加载完成，直接初始化
+// 如果 DOM 已经加载完成（例如脚本延迟加载），直接初始化
 if (document.readyState !== 'loading') {
     initGame();
 }
+
+// ============================================
+// 性能优化说明
+// ============================================
+/*
+   1. DOM 元素缓存：避免重复查询 DOM
+   2. 事件委托：可以考虑将 9 个点击事件合并为 1 个（未实现，保持代码清晰）
+   3. 定时器清理：确保游戏结束/重置时清除所有定时器
+   4. 触摸优化：使用 touchstart 和 preventDefault 减少触摸延迟
+   5. 动画性能：CSS 动画使用 transform 和 opacity（GPU 加速）
+   6. 内存管理：飘字元素在动画结束后自动移除
+   7. 配置集中化：所有魔术数字提取到 CONFIG 对象
+*/

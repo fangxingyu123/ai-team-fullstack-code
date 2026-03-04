@@ -2,16 +2,19 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>打地鼠小游戏</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="经典打地鼠小游戏 - 在 30 秒内尽可能多地打中地鼠！">
+    <meta name="theme-color" content="#667eea">
+    <title>🎮 打地鼠小游戏</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- 游戏主容器 -->
     <div class="game-container">
         <!-- 游戏标题 -->
         <h1 class="game-title">🎮 打地鼠</h1>
         
-        <!-- 游戏信息面板 -->
+        <!-- 游戏信息面板：显示分数、时间、连击 -->
         <div class="info-panel">
             <div class="score-box">
                 <span class="label">分数</span>
@@ -27,9 +30,9 @@
             </div>
         </div>
         
-        <!-- 游戏主区域 -->
+        <!-- 游戏主区域：包含开始/结束界面和游戏网格 -->
         <div class="game-area">
-            <!-- 开始界面 -->
+            <!-- 开始界面：游戏开始前显示 -->
             <div class="start-screen" id="startScreen">
                 <h2>准备好了吗？</h2>
                 <p>在 30 秒内尽可能多地打中地鼠！</p>
@@ -37,7 +40,7 @@
                 <button class="btn btn-primary" id="startBtn">开始游戏</button>
             </div>
             
-            <!-- 游戏结束界面 -->
+            <!-- 游戏结束界面：显示最终成绩 -->
             <div class="game-over-screen" id="gameOverScreen" style="display: none;">
                 <h2>游戏结束！</h2>
                 <div class="final-score">
@@ -51,9 +54,9 @@
                 <button class="btn btn-primary" id="restartBtn">再玩一次</button>
             </div>
             
-            <!-- 游戏网格 -->
+            <!-- 游戏网格：3x3 地鼠洞 -->
             <div class="game-grid" id="gameGrid" style="display: none;">
-                <!-- 3x3 地鼠洞 -->
+                <!-- 地鼠洞 0-8，每个洞包含一个地鼠元素 -->
                 <div class="hole" data-index="0">
                     <div class="mole"></div>
                 </div>
@@ -84,16 +87,17 @@
             </div>
         </div>
         
-        <!-- 得分飘字容器 -->
+        <!-- 得分飘字容器：用于显示击中时的得分动画 -->
         <div class="floating-text-container" id="floatingTextContainer"></div>
     </div>
     
-    <!-- 音效文件 -->
+    <!-- 音效文件：使用 HTML5 Audio 播放 -->
+    <!-- 注意：如果没有音效文件，游戏会静默继续 -->
     <audio id="hitSound" src="sounds/hit.mp3" preload="auto"></audio>
     <audio id="startSound" src="sounds/start.mp3" preload="auto"></audio>
     <audio id="gameOverSound" src="sounds/gameover.mp3" preload="auto"></audio>
     
-    <!-- JavaScript -->
+    <!-- JavaScript 核心逻辑 -->
     <script src="script.js"></script>
 </body>
 </html>

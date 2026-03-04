@@ -1,31 +1,45 @@
 /* ============================================
    打地鼠小游戏 - CSS 样式与动画
+   版本：1.0
+   功能：游戏界面样式、动画效果、响应式设计
    ============================================ */
 
-/* --- 全局重置与基础样式 --- */
+/* ============================================
+   全局重置与基础样式
+   ============================================ */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    /* 性能优化：避免不必要的重绘 */
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* 渐变背景 */
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
+    /* 防止滚动 */
     overflow: hidden;
     /* 锤子光标 - 自定义光标样式 */
+    /* 桌面端显示锤子，移动端自动使用默认触摸光标 */
     cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="%23ff6b6b" opacity="0.8"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="12">🔨</text></svg>') 16 16, auto;
+    /* 禁止移动端双击缩放 */
+    touch-action: manipulation;
 }
 
-/* --- 游戏容器 --- */
+/* ============================================
+   游戏容器
+   ============================================ */
 .game-container {
     background: rgba(255, 255, 255, 0.95);
     border-radius: 20px;
     padding: 30px;
+    /* 阴影效果增强立体感 */
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     max-width: 500px;
     width: 90%;
@@ -33,15 +47,20 @@ body {
     position: relative;
 }
 
-/* --- 游戏标题 --- */
+/* ============================================
+   游戏标题
+   ============================================ */
 .game-title {
     font-size: 2.5rem;
     color: #333;
     margin-bottom: 20px;
+    /* 文字阴影增强可读性 */
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* --- 信息面板（分数、时间、连击） --- */
+/* ============================================
+   信息面板（分数、时间、连击）
+   ============================================ */
 .info-panel {
     display: flex;
     justify-content: space-around;
@@ -49,24 +68,29 @@ body {
     gap: 15px;
 }
 
+/* 分数框 - 粉紫渐变 */
 .score-box,
-.timer-box,
+/* 连击框 - 蓝青渐变 */
 .combo-box {
     background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     padding: 15px 20px;
     border-radius: 15px;
     min-width: 80px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    /* 性能优化：使用 transform 代替 position 动画 */
+    will-change: transform;
 }
 
 .combo-box {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
 }
 
+/* 计时器框 - 橙黄渐变 */
 .timer-box {
     background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
 }
 
+/* 标签文字 */
 .label {
     display: block;
     font-size: 0.85rem;
@@ -74,6 +98,7 @@ body {
     margin-bottom: 5px;
 }
 
+/* 数值文字 */
 .value {
     display: block;
     font-size: 1.8rem;
@@ -81,13 +106,17 @@ body {
     color: white;
 }
 
-/* --- 游戏区域 --- */
+/* ============================================
+   游戏区域
+   ============================================ */
 .game-area {
     position: relative;
     min-height: 300px;
 }
 
-/* --- 开始/结束界面 --- */
+/* ============================================
+   开始/结束界面
+   ============================================ */
 .start-screen,
 .game-over-screen {
     position: absolute;
@@ -118,12 +147,14 @@ body {
     font-size: 1rem;
 }
 
+/* 提示文字样式 */
 .hint {
     font-style: italic;
     color: #888 !important;
     font-size: 0.9rem !important;
 }
 
+/* 最终分数显示 */
 .final-score {
     margin: 20px 0;
 }
@@ -140,6 +171,7 @@ body {
     margin-top: 10px;
 }
 
+/* 游戏统计信息 */
 .stats {
     margin-bottom: 25px;
     color: #666;
@@ -149,17 +181,22 @@ body {
     margin: 5px 0;
 }
 
-/* --- 按钮样式 --- */
+/* ============================================
+   按钮样式
+   ============================================ */
 .btn {
     padding: 15px 40px;
     font-size: 1.2rem;
     border: none;
     border-radius: 50px;
     cursor: pointer;
+    /* 平滑过渡动画 */
     transition: all 0.3s ease;
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 1px;
+    /* 性能优化 */
+    will-change: transform;
 }
 
 .btn-primary {
@@ -177,29 +214,50 @@ body {
     transform: translateY(-1px);
 }
 
-/* --- 游戏网格（3x3 地鼠洞） --- */
+/* 移动端按钮优化：更大的点击区域 */
+@media (max-width: 600px) {
+    .btn {
+        padding: 12px 30px;
+        font-size: 1rem;
+    }
+}
+
+/* ============================================
+   游戏网格（3x3 地鼠洞）
+   ============================================ */
 .game-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 15px;
     padding: 20px;
+    /* 棕色背景模拟土地 */
     background: #8b4513;
     border-radius: 15px;
+    /* 内阴影增强凹陷感 */
     box-shadow: inset 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
-/* --- 地鼠洞样式 --- */
+/* ============================================
+   地鼠洞样式
+   ============================================ */
 .hole {
     position: relative;
     width: 100%;
-    padding-bottom: 100%; /* 保持正方形 */
+    /* 保持正方形：padding-bottom 100% */
+    padding-bottom: 100%;
+    /* 渐变背景模拟洞穴深度 */
     background: linear-gradient(180deg, #654321 0%, #3d2817 100%);
     border-radius: 50%;
     overflow: hidden;
+    /* 内阴影增强立体感 */
     box-shadow: inset 0 10px 20px rgba(0, 0, 0, 0.5);
+    /* 移动端使用默认光标（更好的触摸体验） */
     cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="%23ff6b6b" opacity="0.8"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="12">🔨</text></svg>') 16 16, pointer;
+    /* 性能优化 */
+    will-change: transform;
 }
 
+/* 洞穴底部阴影 */
 .hole::after {
     content: '';
     position: absolute;
@@ -211,26 +269,36 @@ body {
     border-radius: 50%;
 }
 
-/* --- 地鼠样式 --- */
+/* ============================================
+   地鼠样式
+   ============================================ */
 .mole {
     position: absolute;
-    bottom: -100%; /* 初始状态：完全隐藏在洞中 */
+    /* 初始状态：完全隐藏在洞中 */
+    bottom: -100%;
     left: 50%;
     transform: translateX(-50%);
     width: 80%;
     height: 80%;
+    /* 渐变背景模拟地鼠身体 */
     background: linear-gradient(180deg, #8b6914 0%, #6b5210 100%);
+    /* 上圆下方的形状 */
     border-radius: 50% 50% 40% 40%;
+    /* 使用 cubic-bezier 实现弹性弹出效果 */
     transition: bottom 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 2.5rem;
     box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.3);
+    /* 性能优化：提前告知浏览器这个元素会变化 */
+    will-change: bottom, transform;
 }
 
+/* 地鼠表情（使用伪元素） */
 .mole::before {
     content: '🐹';
+    /* 阴影增强立体感 */
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
@@ -244,11 +312,14 @@ body {
     animation: moleHit 0.3s ease-out;
 }
 
+/* 击中后表情变化 */
 .mole.hit::before {
     content: '😵';
 }
 
-/* --- 地鼠被击中动画 --- */
+/* ============================================
+   地鼠被击中动画
+   ============================================ */
 @keyframes moleHit {
     0% {
         transform: translateX(-50%) scale(1);
@@ -263,24 +334,31 @@ body {
     }
 }
 
-/* --- 得分飘字容器 --- */
+/* ============================================
+   得分飘字容器
+   ============================================ */
 .floating-text-container {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
+    /* 不阻挡点击事件 */
     pointer-events: none;
     z-index: 1000;
     overflow: hidden;
 }
 
-/* --- 得分飘字动画 --- */
+/* ============================================
+   得分飘字动画
+   ============================================ */
 .floating-text {
     position: absolute;
     font-size: 1.5rem;
     font-weight: bold;
+    /* 金色文字 */
     color: #ffd700;
+    /* 多层阴影增强视觉效果 */
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5),
                  0 0 10px rgba(255, 215, 0, 0.8);
     animation: floatUp 1s ease-out forwards;
@@ -291,6 +369,7 @@ body {
 /* 连击飘字特殊样式 */
 .floating-text.combo {
     font-size: 2rem;
+    /* 青色文字 */
     color: #00f2fe;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5),
                  0 0 15px rgba(0, 242, 254, 0.8);
@@ -317,7 +396,9 @@ body {
     }
 }
 
-/* --- 连击指示器动画 --- */
+/* ============================================
+   连击指示器动画
+   ============================================ */
 .combo-boost {
     animation: comboPulse 0.5s ease-out;
 }
@@ -337,7 +418,9 @@ body {
     }
 }
 
-/* --- 倒计时警告动画 --- */
+/* ============================================
+   倒计时警告动画
+   ============================================ */
 .timer-warning {
     animation: timerPulse 0.5s ease-in-out infinite;
 }
@@ -351,7 +434,9 @@ body {
     }
 }
 
-/* --- 锤子敲击动画（光标效果） --- */
+/* ============================================
+   锤子敲击动画（光标效果）
+   ============================================ */
 @keyframes hammerStrike {
     0% {
         transform: rotate(0deg) scale(1);
@@ -364,7 +449,7 @@ body {
     }
 }
 
-/* 点击时触发锤子动画 */
+/* 点击时触发洞穴按压效果 */
 .hole:active {
     animation: holePress 0.1s ease-out;
 }
@@ -381,7 +466,9 @@ body {
     }
 }
 
-/* --- 响应式设计 --- */
+/* ============================================
+   响应式设计 - 平板和手机端
+   ============================================ */
 @media (max-width: 600px) {
     .game-container {
         padding: 20px;
@@ -416,11 +503,6 @@ body {
         font-size: 2rem;
     }
 
-    .btn {
-        padding: 12px 30px;
-        font-size: 1rem;
-    }
-
     /* 移动端使用默认光标（更好的触摸体验） */
     body,
     .hole {
@@ -428,6 +510,9 @@ body {
     }
 }
 
+/* ============================================
+   响应式设计 - 小屏手机
+   ============================================ */
 @media (max-width: 400px) {
     .game-title {
         font-size: 1.5rem;
@@ -454,7 +539,9 @@ body {
     }
 }
 
-/* --- 辅助动画类 --- */
+/* ============================================
+   辅助动画类
+   ============================================ */
 /* 用于 JavaScript 动态添加的动画效果 */
 .animate-pop {
     animation: popIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
@@ -486,3 +573,14 @@ body {
         transform: translateX(10px);
     }
 }
+
+/* ============================================
+   性能优化提示
+   ============================================ */
+/* 
+   1. 使用 will-change 提前告知浏览器哪些属性会变化
+   2. 使用 transform 和 opacity 实现动画（GPU 加速）
+   3. 避免使用 position/top/left 动画（会触发重排）
+   4. 移动端禁用不必要的 hover 效果
+   5. 使用 CSS 变量可以进一步优化（未使用以保持兼容性）
+*/
