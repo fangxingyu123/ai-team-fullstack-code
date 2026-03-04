@@ -1,0 +1,611 @@
+/* ========================================
+   打地鼠小游戏 - 基础样式
+   ======================================== */
+
+/* CSS 变量定义 - 便于主题调整 */
+:root {
+    --primary-color: #4CAF50;
+    --primary-dark: #388E3C;
+    --secondary-color: #FF9800;
+    --danger-color: #f44336;
+    --text-color: #333;
+    --text-light: #666;
+    --bg-color: #f5f5f5;
+    --hole-color: #8B4513;
+    --hole-dark: #654321;
+    --mole-color: #9C6B4E;
+    --mole-light: #C4A58B;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --grid-gap: 15px;
+    --hole-size: 100px;
+    --border-radius: 12px;
+}
+
+/* 全局重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 页面基础样式 */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    color: var(--text-color);
+    overflow-x: hidden;
+}
+
+/* 游戏主容器 */
+.game-container {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: 0 20px 60px var(--shadow-color);
+    padding: 30px;
+    max-width: 500px;
+    width: 100%;
+    position: relative;
+}
+
+/* 游戏标题 */
+.game-title {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    color: var(--text-color);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================
+   信息面板 - 分数、时间、连击
+   ======================================== */
+.info-panel {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 25px;
+    padding: 15px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: var(--border-radius);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.score-box,
+.timer-box,
+.combo-box {
+    text-align: center;
+    padding: 10px 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    min-width: 80px;
+}
+
+.score-box .label,
+.timer-box .label,
+.combo-box .label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-light);
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.score-box .value,
+.timer-box .value,
+.combo-box .value {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.timer-box .value {
+    color: var(--secondary-color);
+}
+
+.combo-box .value {
+    color: var(--danger-color);
+}
+
+/* ========================================
+   游戏区域
+   ======================================== */
+.game-area {
+    position: relative;
+    min-height: 400px;
+}
+
+/* 开始界面 */
+.start-screen,
+.game-over-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: var(--border-radius);
+    z-index: 10;
+    text-align: center;
+    padding: 20px;
+}
+
+.start-screen h2,
+.game-over-screen h2 {
+    font-size: 2rem;
+    margin-bottom: 15px;
+    color: var(--primary-color);
+}
+
+.start-screen p,
+.game-over-screen p {
+    font-size: 1.1rem;
+    color: var(--text-light);
+    margin-bottom: 10px;
+}
+
+.hint {
+    font-size: 0.9rem !important;
+    color: var(--secondary-color) !important;
+    margin-top: 10px !important;
+}
+
+/* 最终分数显示 */
+.final-score {
+    margin: 20px 0;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: var(--border-radius);
+    color: white;
+}
+
+.final-score p:first-child {
+    font-size: 1rem;
+    opacity: 0.9;
+    margin-bottom: 10px;
+}
+
+.final-score .score-value {
+    font-size: 3rem;
+    font-weight: bold;
+}
+
+.stats {
+    margin-bottom: 25px;
+}
+
+.stats p {
+    margin: 8px 0;
+    font-size: 1rem;
+    color: var(--text-light);
+}
+
+/* ========================================
+   按钮样式
+   ======================================== */
+.btn {
+    padding: 15px 40px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+.btn-primary:active {
+    transform: translateY(-1px);
+}
+
+/* ========================================
+   游戏网格 - 3x3 地鼠洞布局
+   ======================================== */
+.game-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: var(--grid-gap);
+    padding: 20px;
+    background: linear-gradient(135deg, #87CEEB 0%, #98FB98 100%);
+    border-radius: var(--border-radius);
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* 地鼠洞样式 */
+.hole {
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%; /* 保持正方形比例 */
+    background: linear-gradient(180deg, var(--hole-color) 0%, var(--hole-dark) 100%);
+    border-radius: 50% 50% 45% 45%;
+    box-shadow: 
+        inset 0 10px 20px rgba(0, 0, 0, 0.5),
+        0 5px 15px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+
+.hole:active {
+    transform: scale(0.95);
+}
+
+/* 地鼠洞边缘装饰 */
+.hole::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50% 50% 45% 45%;
+    border: 3px solid rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+}
+
+/* 草地装饰 */
+.hole::after {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 10%;
+    right: 10%;
+    height: 15px;
+    background: linear-gradient(180deg, #228B22 0%, #32CD32 100%);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+/* 地鼠样式 */
+.mole {
+    position: absolute;
+    bottom: -100%; /* 初始隐藏在地洞下 */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70%;
+    height: 70%;
+    background: linear-gradient(180deg, var(--mole-color) 0%, var(--mole-light) 100%);
+    border-radius: 50% 50% 40% 40%;
+    z-index: 2;
+    transition: bottom 0.3s ease-out;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* 地鼠脸部特征 */
+.mole::before {
+    content: '';
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 40%;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+}
+
+/* 地鼠眼睛 */
+.mole::after {
+    content: '👀';
+    position: absolute;
+    top: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.5rem;
+}
+
+/* 地鼠冒出状态 */
+.hole.active .mole {
+    bottom: 10%;
+}
+
+/* 地鼠被击中状态 */
+.hole.hit .mole {
+    background: linear-gradient(180deg, #f44336 0%, #d32f2f 100%);
+}
+
+/* ========================================
+   得分飘字容器
+   ======================================== */
+.floating-text-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 100;
+    overflow: hidden;
+}
+
+/* ========================================
+   锤子光标样式
+   ======================================== */
+.game-grid {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><text y="20" font-size="20">🔨</text></svg>') 16 16, auto;
+}
+
+.hole,
+.mole {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><text y="20" font-size="20">🔨</text></svg>') 16 16, pointer;
+}
+
+/* ========================================
+   响应式设计 - 移动端适配
+   ======================================== */
+
+/* 平板设备 (768px 及以下) */
+@media screen and (max-width: 768px) {
+    .game-container {
+        padding: 20px;
+    }
+
+    .game-title {
+        font-size: 2rem;
+    }
+
+    .info-panel {
+        flex-direction: row;
+        padding: 10px;
+    }
+
+    .score-box,
+    .timer-box,
+    .combo-box {
+        min-width: 60px;
+        padding: 8px 12px;
+    }
+
+    .score-box .value,
+    .timer-box .value,
+    .combo-box .value {
+        font-size: 1.4rem;
+    }
+
+    .game-area {
+        min-height: 350px;
+    }
+
+    .game-grid {
+        gap: 10px;
+        padding: 15px;
+    }
+
+    :root {
+        --hole-size: 80px;
+    }
+}
+
+/* 手机设备 (480px 及以下) */
+@media screen and (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+
+    .game-container {
+        padding: 15px;
+        border-radius: 8px;
+    }
+
+    .game-title {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+    }
+
+    .info-panel {
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .score-box,
+    .timer-box,
+    .combo-box {
+        min-width: 70px;
+        padding: 6px 10px;
+    }
+
+    .score-box .label,
+    .timer-box .label,
+    .combo-box .label {
+        font-size: 0.75rem;
+    }
+
+    .score-box .value,
+    .timer-box .value,
+    .combo-box .value {
+        font-size: 1.2rem;
+    }
+
+    .game-area {
+        min-height: 300px;
+    }
+
+    .game-grid {
+        gap: 8px;
+        padding: 10px;
+    }
+
+    .start-screen h2,
+    .game-over-screen h2 {
+        font-size: 1.5rem;
+    }
+
+    .start-screen p,
+    .game-over-screen p {
+        font-size: 0.9rem;
+    }
+
+    .btn {
+        padding: 12px 30px;
+        font-size: 1rem;
+    }
+
+    .final-score .score-value {
+        font-size: 2.5rem;
+    }
+
+    /* 调整地鼠洞大小 */
+    :root {
+        --hole-size: 70px;
+        --grid-gap: 8px;
+    }
+}
+
+/* 小屏手机 (360px 及以下) */
+@media screen and (max-width: 360px) {
+    .game-title {
+        font-size: 1.3rem;
+    }
+
+    .info-panel {
+        padding: 8px;
+    }
+
+    .score-box,
+    .timer-box,
+    .combo-box {
+        min-width: 55px;
+        padding: 5px 8px;
+    }
+
+    .score-box .value,
+    .timer-box .value,
+    .combo-box .value {
+        font-size: 1rem;
+    }
+
+    .game-grid {
+        gap: 5px;
+        padding: 8px;
+    }
+
+    :root {
+        --hole-size: 60px;
+    }
+}
+
+/* 横屏模式优化 */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+    body {
+        align-items: flex-start;
+        padding: 10px;
+    }
+
+    .game-container {
+        padding: 15px;
+        margin-top: 10px;
+    }
+
+    .game-title {
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+    }
+
+    .info-panel {
+        margin-bottom: 15px;
+    }
+
+    .game-area {
+        min-height: 250px;
+    }
+
+    .game-grid {
+        gap: 8px;
+        padding: 10px;
+    }
+
+    :root {
+        --hole-size: 65px;
+    }
+}
+
+/* 触摸设备优化 */
+@media (hover: none) and (pointer: coarse) {
+    .hole:active {
+        transform: scale(0.92);
+    }
+
+    .btn {
+        padding: 18px 45px; /* 更大的触摸区域 */
+    }
+
+    .score-box,
+    .timer-box,
+    .combo-box {
+        min-width: 85px; /* 更大的显示区域 */
+    }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text-color: #f5f5f5;
+        --text-light: #aaa;
+        --bg-color: #1a1a1a;
+    }
+
+    body {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    }
+
+    .game-container {
+        background: #2d2d2d;
+    }
+
+    .info-panel {
+        background: linear-gradient(135deg, #3d3d3d 0%, #2d2d2d 100%);
+    }
+
+    .score-box,
+    .timer-box,
+    .combo-box {
+        background: #1a1a1a;
+    }
+
+    .start-screen,
+    .game-over-screen {
+        background: rgba(45, 45, 45, 0.95);
+    }
+
+    .game-grid {
+        background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
+    }
+}
+
+/* 减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+    .mole {
+        transition: none;
+    }
+
+    .btn {
+        transition: none;
+    }
+
+    .hole {
+        transition: none;
+    }
+}
