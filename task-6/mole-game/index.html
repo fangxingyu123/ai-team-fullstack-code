@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打地鼠小游戏</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- 游戏标题 -->
+        <h1 class="game-title">🎮 打地鼠</h1>
+        
+        <!-- 游戏信息栏：分数和倒计时 -->
+        <div class="game-info">
+            <div class="score-board">
+                <span class="label">分数</span>
+                <span class="value" id="score">0</span>
+            </div>
+            <div class="timer-board">
+                <span class="label">时间</span>
+                <span class="value" id="timer">30</span>
+            </div>
+        </div>
+        
+        <!-- 3x3 地鼠洞网格 -->
+        <div class="mole-grid" id="moleGrid">
+            <!-- 9 个地鼠洞由 JS 动态生成 -->
+        </div>
+        
+        <!-- 开始界面 -->
+        <div class="overlay" id="startOverlay">
+            <div class="overlay-content">
+                <h2>准备好了吗？</h2>
+                <p>在 30 秒内尽可能多地打中地鼠！</p>
+                <p class="hint">💡 连击可以获得额外奖励分数</p>
+                <button class="btn btn-primary" id="startBtn">开始游戏</button>
+            </div>
+        </div>
+        
+        <!-- 游戏结束结算界面 -->
+        <div class="overlay hidden" id="gameOverOverlay">
+            <div class="overlay-content">
+                <h2>游戏结束！</h2>
+                <div class="final-score">
+                    <span class="label">最终得分</span>
+                    <span class="value" id="finalScore">0</span>
+                </div>
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">击中次数</span>
+                        <span class="stat-value" id="hitCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">最大连击</span>
+                        <span class="stat-value" id="maxCombo">0</span>
+                    </div>
+                </div>
+                <p class="message" id="endMessage"></p>
+                <button class="btn btn-primary" id="restartBtn">再玩一次</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
