@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>打地鼠 - 调试测试</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a2e; color: #eee; }
+        .log { background: #16213e; padding: 10px; margin: 10px 0; border-radius: 5px; max-height: 400px; overflow-y: auto; }
+        .log-entry { margin: 5px 0; }
+        .hit { color: #4ade80; }
+        .miss { color: #f87171; }
+        .score { color: #fbbf24; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🐛 计分逻辑调试测试</h1>
+    <p>模拟快速连续点击，测试计分逻辑</p>
+    
+    <div>
+        <button onclick="simulateHit()">模拟命中 (+10 分)</button>
+        <button onclick="simulateFastClicks()">模拟快速连击 (10 次)</button>
+        <button onclick="simulateSlowClicks()">模拟慢速点击 (间隔 3 秒)</button>
+        <button onclick="resetTest()">重置测试</button>
+    </div>
+    
+    <div style="margin: 20px 0; font-size: 24px;">
+        分数：<span id="testScore" style="color: #fbbf24;">0</span> | 
+        连击：<span id="testCombo" style="color: #4ade80;">x1</span> | 
+        命中次数：<span id="testHits" style="color: #60a5fa;">0</span>
+    </div>
+    
+    <div class="log" id="logContainer"></div>
+    
+    <script>
+        // 复制游戏的核心逻辑
+        const CONFIG = {
+            BASE_SCORE: 10,
+            MAX_COMBO: 5,
+            COMBO_TIMEOUT: 2000
+        };
+        
+        let testState = {
+            score: 0,
+            combo: 1,
+            maxCombo: 1,
+            molesHit: 0,
+            lastHitTime: 0,
+            comboTimeout: CONFIG.COMBO_TIMEOUT
+        };
+        
+        function log(message, type = '') {
+            const logContainer = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + type;
+            const time = new Date().toLocaleTimeString();
+            entry.textContent = `[${time}] ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        function updateUI() {
+            document.getElementById('testScore').textContent = testState.score;
+            document.getElementById('testCombo').textContent = 'x' + testState.combo;
+            document.getElementById('testHits').textContent = testState.molesHit;
+        }
+        
+        function simulateHit() {
+            const now = Date.now();
+            
+            // 连击检测逻辑（与游戏完全相同）
+            if (testState.lastHitTime > 0 && (now - testState.lastHitTime) < testState.comboTimeout) {
+                testState.combo = Math.min(testState.combo + 1, CONFIG.MAX_COMBO);
+                if (testState.combo > testState.maxCombo) {
+                    testState.maxCombo = testState.combo;
+                }
+                log(`连击！combo: ${testState.combo - 1} → ${testState.combo}`, 'hit');
+            } else {
+                testState.combo = 1;
+                log(`连击中断，重置为 x1 (间隔：${testState.lastHitTime > 0 ? now - testState.lastHitTime + 'ms' : '首次'})`, 'miss');
+            }
+            
+            testState.lastHitTime = now;
+            
+            const points = CONFIG.BASE_SCORE * testState.combo;
+            const oldScore = testState.score;
+            testState.score += points;
+            testState.molesHit++;
+            
+            log(`得分：${CONFIG.BASE_SCORE} × ${testState.combo} = ${points}, 总分：${oldScore} → ${testState.score}`, 'score');
+            updateUI();
+        }
+        
+        function simulateFastClicks() {
+            log('=== 开始快速连击测试 (10 次，间隔 500ms) ===');
+            let count = 0;
+            const interval = setInterval(() => {
+                simulateHit();
+                count++;
+                if (count >= 10) {
+                    clearInterval(interval);
+                    log('=== 快速连击测试完成 ===');
+                }
+            }, 500);
+        }
+        
+        function simulateSlowClicks() {
+            log('=== 开始慢速点击测试 (5 次，间隔 3 秒) ===');
+            let count = 0;
+            const interval = setInterval(() => {
+                simulateHit();
+                count++;
+                if (count >= 5) {
+                    clearInterval(interval);
+                    log('=== 慢速点击测试完成 ===');
+                }
+            }, 3000);
+        }
+        
+        function resetTest() {
+            testState = {
+                score: 0,
+                combo: 1,
+                maxCombo: 1,
+                molesHit: 0,
+                lastHitTime: 0,
+                comboTimeout: CONFIG.COMBO_TIMEOUT
+            };
+            document.getElementById('logContainer').innerHTML = '';
+            updateUI();
+            log('测试已重置');
+        }
+        
+        log('调试测试就绪。点击按钮模拟命中。');
+    </script>
+</body>
+</html>
