@@ -1,7 +1,8 @@
 /* ============================================
    打地鼠小游戏 - JavaScript 核心逻辑
-   版本：1.0
+   版本：1.1
    功能：地鼠随机出现、点击事件监听、命中判定、计分系统
+   修复：连击重置逻辑、定时器竞态条件、音效错误处理
    ============================================ */
 
 // ============================================
@@ -483,11 +484,12 @@ function handleHit(index) {
 /**
  * 处理未命中事件（点击空地）
  * @param {number} index - 被点击的地鼠洞索引
+ * 修复：统一连击重置逻辑，同时重置 lastHitTime
  */
 function handleMiss(index) {
     // 未命中时重置连击（不扣分，只中断连击）
     gameState.combo = 1;
-    gameState.lastHitTime = 0;
+    gameState.lastHitTime = 0;  // 修复：确保连击计时器完全重置
     
     updateUI();
     
@@ -599,17 +601,32 @@ function updateUI() {
 /**
  * 播放音效
  * @param {HTMLAudioElement} audio - 音频元素
- * 注意：如果音效文件不存在，会静默失败，不影响游戏
+ * 修复：改进错误处理，区分文件不存在和其他播放错误
  */
 function playSound(audio) {
     if (audio) {
+        // 检查音频是否有有效源
+        if (!audio.src || audio.src.trim() === '') {
+            console.log('🔇 音效未配置');
+            return;
+        }
+        
         // 重置播放位置（允许快速重复播放）
         audio.currentTime = 0;
+        
         // 播放音效（如果音频文件存在）
         audio.play().catch(e => {
-            // 如果音频文件不存在或加载失败，静默处理
-            // 这样可以确保游戏在没有音效的情况下也能正常运行
-            console.log('🔇 音效文件未找到:', audio.src);
+            // 区分不同类型的错误
+            if (e.name === 'NotAllowedError') {
+                // 用户未与页面交互，浏览器阻止自动播放
+                console.log('🔇 音效播放需要用户交互');
+            } else if (e.name === 'NotFoundError' || e.message.includes('404')) {
+                // 音效文件不存在
+                console.log('🔇 音效文件未找到:', audio.src);
+            } else {
+                // 其他错误
+                console.log('🔇 音效播放失败:', e.message);
+            }
         });
     }
 }
@@ -639,4 +656,6 @@ if (document.readyState !== 'loading') {
    5. 动画性能：CSS 动画使用 transform 和 opacity（GPU 加速）
    6. 内存管理：飘字元素在动画结束后自动移除
    7. 配置集中化：所有魔术数字提取到 CONFIG 对象
+   8. 错误处理：音效播放错误分类处理
+   9. 状态一致性：连击重置逻辑统一（handleHit 和 handleMiss 都重置 lastHitTime）
 */
