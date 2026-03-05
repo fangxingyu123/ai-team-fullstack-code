@@ -2,136 +2,592 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>打地鼠 - 调试测试</title>
     <style>
-        body { font-family: monospace; padding: 20px; background: #1a1a2e; color: #eee; }
-        .log { background: #16213e; padding: 10px; margin: 10px 0; border-radius: 5px; max-height: 400px; overflow-y: auto; }
-        .log-entry { margin: 5px 0; }
-        .hit { color: #4ade80; }
-        .miss { color: #f87171; }
-        .score { color: #fbbf24; }
-        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .test-panel {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .test-panel h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 5px;
+        }
+        .stat-value.highlight {
+            color: #28a745;
+        }
+        .stat-value.warning {
+            color: #dc3545;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover:not(:disabled) {
+            background: #c82333;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background: #5a6268;
+        }
+        #log {
+            background: #1a1a2e;
+            color: #eee;
+            padding: 15px;
+            border-radius: 8px;
+            height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.6;
+            font-family: 'Courier New', monospace;
+        }
+        .log-entry {
+            margin: 3px 0;
+            padding: 2px 0;
+            border-bottom: 1px solid #333;
+        }
+        .log-hit { color: #00ff00; }
+        .log-miss { color: #ff4444; }
+        .log-spawn { color: #00bfff; }
+        .log-score { color: #ffff00; font-weight: bold; }
+        .log-error { color: #ff00ff; font-weight: bold; }
+        .log-info { color: #00ffff; }
+        .log-warning { color: #ffa500; }
+        .progress-bar {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 20px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #28a745, #20c997);
+            height: 100%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .test-phase {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .test-phase h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        .phase-indicator {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .phase-active {
+            background: #28a745;
+            color: white;
+        }
+        .phase-pending {
+            background: #6c757d;
+            color: white;
+        }
+        .phase-complete {
+            background: #007bff;
+            color: white;
+        }
     </style>
 </head>
 <body>
-    <h1>🐛 计分逻辑调试测试</h1>
-    <p>模拟快速连续点击，测试计分逻辑</p>
-    
-    <div>
-        <button onclick="simulateHit()">模拟命中 (+10 分)</button>
-        <button onclick="simulateFastClicks()">模拟快速连击 (10 次)</button>
-        <button onclick="simulateSlowClicks()">模拟慢速点击 (间隔 3 秒)</button>
-        <button onclick="resetTest()">重置测试</button>
+    <div class="container">
+        <h1>🎮 打地鼠 - 调试测试工具</h1>
+        <p class="subtitle">用于验证 Bug 修复：打到后面是否还能正常加分</p>
+        
+        <div class="test-panel">
+            <h3>📊 实时统计</h3>
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-label">当前分数</div>
+                    <div class="stat-value" id="scoreDisplay">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">点击次数</div>
+                    <div class="stat-value" id="clickDisplay">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">命中次数</div>
+                    <div class="stat-value highlight" id="hitDisplay">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">命中率</div>
+                    <div class="stat-value" id="accuracyDisplay">0%</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">当前连击</div>
+                    <div class="stat-value" id="comboDisplay">x1</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">最高连击</div>
+                    <div class="stat-value" id="maxComboDisplay">x1</div>
+                </div>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar" style="width: 0%">0/100</div>
+            </div>
+        </div>
+        
+        <div class="test-panel">
+            <h3>🧪 测试阶段</h3>
+            <div class="test-phase">
+                <h4>
+                    <span class="phase-indicator phase-pending" id="phase1Indicator">阶段 1</span>
+                    低分测试 (0-20 分) - 验证基础计分
+                </h4>
+                <div id="phase1Status">等待开始...</div>
+            </div>
+            <div class="test-phase">
+                <h4>
+                    <span class="phase-indicator phase-pending" id="phase2Indicator">阶段 2</span>
+                    中分测试 (20-50 分) - 验证连击系统
+                </h4>
+                <div id="phase2Status">等待开始...</div>
+            </div>
+            <div class="test-phase">
+                <h4>
+                    <span class="phase-indicator phase-pending" id="phase3Indicator">阶段 3</span>
+                    高分测试 (50-100 分) - 验证 Bug 修复
+                </h4>
+                <div id="phase3Status">等待开始...</div>
+            </div>
+        </div>
+        
+        <div class="test-panel">
+            <h3>🎛️ 控制面板</h3>
+            <button class="btn-primary" onclick="startAutomatedTest()" id="startBtn">
+                🚀 开始自动化测试 (目标 100 分)
+            </button>
+            <button class="btn-danger" onclick="stopTest()" id="stopBtn" disabled>
+                ⏹️ 停止测试
+            </button>
+            <button class="btn-secondary" onclick="resetTest()" id="resetBtn">
+                🔄 重置测试
+            </button>
+            <button class="btn-secondary" onclick="clearLog()" id="clearBtn">
+                🗑️ 清空日志
+            </button>
+        </div>
+        
+        <div class="test-panel">
+            <h3>📝 测试日志</h3>
+            <div id="log"></div>
+        </div>
     </div>
-    
-    <div style="margin: 20px 0; font-size: 24px;">
-        分数：<span id="testScore" style="color: #fbbf24;">0</span> | 
-        连击：<span id="testCombo" style="color: #4ade80;">x1</span> | 
-        命中次数：<span id="testHits" style="color: #60a5fa;">0</span>
-    </div>
-    
-    <div class="log" id="logContainer"></div>
     
     <script>
-        // 复制游戏的核心逻辑
-        const CONFIG = {
-            BASE_SCORE: 10,
-            MAX_COMBO: 5,
-            COMBO_TIMEOUT: 2000
+        // ==================== 测试配置 ====================
+        const TEST_CONFIG = {
+            CLICK_INTERVAL_MIN: 600,
+            CLICK_INTERVAL_MAX: 1200,
+            TARGET_SCORES: [20, 50, 100],
+            MOLE_SHOW_DURATION: 1500,
+            HIT_RESPAWN_DELAY: 500,
+            MISS_RESPAWN_DELAY: 300
         };
         
+        // ==================== 测试状态 ====================
         let testState = {
+            isRunning: false,
             score: 0,
+            clicks: 0,
+            hits: 0,
+            misses: 0,
             combo: 1,
             maxCombo: 1,
-            molesHit: 0,
             lastHitTime: 0,
-            comboTimeout: CONFIG.COMBO_TIMEOUT
+            currentMoleIndex: -1,
+            moleAvailable: false,
+            timers: [],
+            currentPhase: 0,
+            phaseResults: {
+                phase1: { startTime: 0, endTime: 0, hits: 0, score: 0 },
+                phase2: { startTime: 0, endTime: 0, hits: 0, score: 0 },
+                phase3: { startTime: 0, endTime: 0, hits: 0, score: 0 }
+            }
         };
         
-        function log(message, type = '') {
-            const logContainer = document.getElementById('logContainer');
+        // ==================== 日志系统 ====================
+        function log(message, type = 'log-info') {
+            const logDiv = document.getElementById('log');
             const entry = document.createElement('div');
             entry.className = 'log-entry ' + type;
-            const time = new Date().toLocaleTimeString();
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
             entry.textContent = `[${time}] ${message}`;
-            logContainer.appendChild(entry);
-            logContainer.scrollTop = logContainer.scrollHeight;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
         }
         
-        function updateUI() {
-            document.getElementById('testScore').textContent = testState.score;
-            document.getElementById('testCombo').textContent = 'x' + testState.combo;
-            document.getElementById('testHits').textContent = testState.molesHit;
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            log('日志已清空', 'log-info');
         }
         
-        function simulateHit() {
-            const now = Date.now();
+        // ==================== UI 更新 ====================
+        function updateDisplay() {
+            document.getElementById('scoreDisplay').textContent = testState.score;
+            document.getElementById('clickDisplay').textContent = testState.clicks;
+            document.getElementById('hitDisplay').textContent = testState.hits;
+            document.getElementById('comboDisplay').textContent = 'x' + testState.combo;
+            document.getElementById('maxComboDisplay').textContent = 'x' + testState.maxCombo;
             
-            // 连击检测逻辑（与游戏完全相同）
-            if (testState.lastHitTime > 0 && (now - testState.lastHitTime) < testState.comboTimeout) {
-                testState.combo = Math.min(testState.combo + 1, CONFIG.MAX_COMBO);
-                if (testState.combo > testState.maxCombo) {
-                    testState.maxCombo = testState.combo;
+            const accuracy = testState.clicks > 0 ? 
+                Math.round((testState.hits / testState.clicks) * 100) : 0;
+            document.getElementById('accuracyDisplay').textContent = accuracy + '%';
+            
+            const progress = Math.min((testState.score / 100) * 100, 100);
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = progress + '%';
+            progressBar.textContent = testState.score + '/100';
+            
+            updatePhaseIndicators();
+        }
+        
+        function updatePhaseIndicators() {
+            const phases = [
+                { id: 'phase1', target: 20, indicator: 'phase1Indicator', status: 'phase1Status' },
+                { id: 'phase2', target: 50, indicator: 'phase2Indicator', status: 'phase2Status' },
+                { id: 'phase3', target: 100, indicator: 'phase3Indicator', status: 'phase3Status' }
+            ];
+            
+            phases.forEach((phase, index) => {
+                const indicator = document.getElementById(phase.indicator);
+                const status = document.getElementById(phase.status);
+                
+                if (testState.score >= phase.target) {
+                    indicator.className = 'phase-indicator phase-complete';
+                    indicator.textContent = '✓';
+                    if (testState.isRunning && index === testState.currentPhase - 1) {
+                        status.textContent = `已完成 - 最高分：${testState.score}`;
+                    }
+                } else if (index === testState.currentPhase) {
+                    indicator.className = 'phase-indicator phase-active';
+                    indicator.textContent = '▶';
+                    status.textContent = `进行中... 当前分数：${testState.score}/${phase.target}`;
+                } else {
+                    indicator.className = 'phase-indicator phase-pending';
+                    indicator.textContent = (index + 1);
+                    status.textContent = '等待开始...';
                 }
-                log(`连击！combo: ${testState.combo - 1} → ${testState.combo}`, 'hit');
-            } else {
-                testState.combo = 1;
-                log(`连击中断，重置为 x1 (间隔：${testState.lastHitTime > 0 ? now - testState.lastHitTime + 'ms' : '首次'})`, 'miss');
+            });
+        }
+        
+        // ==================== 测试逻辑 ====================
+        function startAutomatedTest() {
+            if (testState.isRunning) {
+                log('测试已在运行中', 'log-warning');
+                return;
             }
             
-            testState.lastHitTime = now;
+            resetTest();
+            testState.isRunning = true;
+            testState.currentPhase = 0;
             
-            const points = CONFIG.BASE_SCORE * testState.combo;
-            const oldScore = testState.score;
-            testState.score += points;
-            testState.molesHit++;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
             
-            log(`得分：${CONFIG.BASE_SCORE} × ${testState.combo} = ${points}, 总分：${oldScore} → ${testState.score}`, 'score');
-            updateUI();
+            log('========================================', 'log-score');
+            log('🚀 开始自动化测试！', 'log-score');
+            log(`目标：100 分（验证 50+ 分后仍能正常得分）`, 'log-score');
+            log(`配置：点击间隔 ${TEST_CONFIG.CLICK_INTERVAL_MIN}-${TEST_CONFIG.CLICK_INTERVAL_MAX}ms`, 'log-info');
+            log('========================================', 'log-score');
+            
+            spawnMole();
+            updateDisplay();
         }
         
-        function simulateFastClicks() {
-            log('=== 开始快速连击测试 (10 次，间隔 500ms) ===');
-            let count = 0;
-            const interval = setInterval(() => {
-                simulateHit();
-                count++;
-                if (count >= 10) {
-                    clearInterval(interval);
-                    log('=== 快速连击测试完成 ===');
-                }
-            }, 500);
-        }
-        
-        function simulateSlowClicks() {
-            log('=== 开始慢速点击测试 (5 次，间隔 3 秒) ===');
-            let count = 0;
-            const interval = setInterval(() => {
-                simulateHit();
-                count++;
-                if (count >= 5) {
-                    clearInterval(interval);
-                    log('=== 慢速点击测试完成 ===');
-                }
-            }, 3000);
+        function stopTest() {
+            testState.isRunning = false;
+            
+            testState.timers.forEach(timer => clearTimeout(timer));
+            testState.timers = [];
+            
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            
+            log('========================================', 'log-error');
+            log('⏹️ 测试已停止', 'log-error');
+            log(`最终统计：分数=${testState.score}, 点击=${testState.clicks}, 命中=${testState.hits}, 命中率=${Math.round((testState.hits/testState.clicks)*100)}%`, 'log-score');
+            log('========================================', 'log-error');
+            
+            generateReport();
         }
         
         function resetTest() {
+            testState.timers.forEach(timer => clearTimeout(timer));
+            testState.timers = [];
+            
             testState = {
+                isRunning: false,
                 score: 0,
+                clicks: 0,
+                hits: 0,
+                misses: 0,
                 combo: 1,
                 maxCombo: 1,
-                molesHit: 0,
                 lastHitTime: 0,
-                comboTimeout: CONFIG.COMBO_TIMEOUT
+                currentMoleIndex: -1,
+                moleAvailable: false,
+                timers: [],
+                currentPhase: 0,
+                phaseResults: {
+                    phase1: { startTime: 0, endTime: 0, hits: 0, score: 0 },
+                    phase2: { startTime: 0, endTime: 0, hits: 0, score: 0 },
+                    phase3: { startTime: 0, endTime: 0, hits: 0, score: 0 }
+                }
             };
-            document.getElementById('logContainer').innerHTML = '';
-            updateUI();
-            log('测试已重置');
+            
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            
+            updateDisplay();
+            log('测试状态已重置', 'log-info');
         }
         
-        log('调试测试就绪。点击按钮模拟命中。');
+        function spawnMole() {
+            if (!testState.isRunning) return;
+            
+            const newIndex = Math.floor(Math.random() * 9);
+            testState.currentMoleIndex = newIndex;
+            testState.moleAvailable = true;
+            
+            log(`[SPAWN] 地鼠出现在位置 ${newIndex}`, 'log-spawn');
+            
+            const disappearTimer = setTimeout(() => {
+                if (testState.moleAvailable && testState.currentMoleIndex === newIndex) {
+                    log(`[DESPAWN] 地鼠 ${newIndex} 自动消失（未命中）`, 'log-miss');
+                    testState.moleAvailable = false;
+                    testState.misses++;
+                    
+                    const spawnTimer = setTimeout(() => {
+                        if (testState.isRunning) spawnMole();
+                    }, TEST_CONFIG.MISS_RESPAWN_DELAY);
+                    testState.timers.push(spawnTimer);
+                }
+            }, TEST_CONFIG.MOLE_SHOW_DURATION);
+            testState.timers.push(disappearTimer);
+            
+            scheduleClick();
+        }
+        
+        function scheduleClick() {
+            if (!testState.isRunning || !testState.moleAvailable) return;
+            
+            const delay = Math.floor(Math.random() * 
+                (TEST_CONFIG.CLICK_INTERVAL_MAX - TEST_CONFIG.CLICK_INTERVAL_MIN + 1)) + 
+                TEST_CONFIG.CLICK_INTERVAL_MIN;
+            
+            const clickTimer = setTimeout(() => {
+                if (!testState.isRunning || !testState.moleAvailable) return;
+                
+                testState.clicks++;
+                const clickedIndex = testState.currentMoleIndex;
+                
+                log(`[CLICK] 点击位置 ${clickedIndex} (第 ${testState.clicks} 次点击)`, '');
+                
+                if (clickedIndex === testState.currentMoleIndex && testState.moleAvailable) {
+                    handleHit();
+                } else {
+                    handleMiss();
+                }
+                
+                updateDisplay();
+            }, delay);
+            testState.timers.push(clickTimer);
+        }
+        
+        function handleHit() {
+            testState.hits++;
+            const now = Date.now();
+            
+            if (testState.lastHitTime > 0 && (now - testState.lastHitTime) < 2000) {
+                testState.combo = Math.min(testState.combo + 1, 5);
+                if (testState.combo > testState.maxCombo) {
+                    testState.maxCombo = testState.combo;
+                }
+                log(`[HIT] 命中！连击 x${testState.combo}`, 'log-hit');
+            } else {
+                testState.combo = 1;
+                log(`[HIT] 命中！连击重置 x1`, 'log-hit');
+            }
+            
+            testState.lastHitTime = now;
+            const points = 10 * testState.combo;
+            const oldScore = testState.score;
+            testState.score += points;
+            
+            log(`[HIT] +${points}分，总分：${oldScore} → ${testState.score}`, 'log-score');
+            
+            testState.moleAvailable = false;
+            
+            checkPhaseProgress();
+            
+            if (testState.score >= 100) {
+                log('========================================', 'log-score');
+                log('🎉 测试完成！达到目标分数 100', 'log-score');
+                log('========================================', 'log-score');
+                stopTest();
+                return;
+            }
+            
+            const spawnTimer = setTimeout(() => {
+                if (testState.isRunning) spawnMole();
+            }, TEST_CONFIG.HIT_RESPAWN_DELAY);
+            testState.timers.push(spawnTimer);
+        }
+        
+        function handleMiss() {
+            testState.combo = 1;
+            testState.lastHitTime = 0;
+            log(`[MISS] 未命中，连击重置`, 'log-miss');
+        }
+        
+        function checkPhaseProgress() {
+            const phases = [
+                { score: 20, name: 'phase1' },
+                { score: 50, name: 'phase2' },
+                { score: 100, name: 'phase3' }
+            ];
+            
+            phases.forEach((phase, index) => {
+                if (testState.score >= phase.score && testState.currentPhase <= index) {
+                    testState.phaseResults[phase.name].endTime = Date.now();
+                    testState.phaseResults[phase.name].hits = testState.hits;
+                    testState.phaseResults[phase.name].score = testState.score;
+                    testState.currentPhase = index + 1;
+                    
+                    log(`========================================`, 'log-score');
+                    log(`✓ 完成阶段 ${index + 1}: 达到 ${phase.score} 分！`, 'log-score');
+                    log(`  命中次数：${testState.hits}`, 'log-info');
+                    log(`  当前连击：x${testState.combo}`, 'log-info');
+                    log(`========================================`, 'log-score');
+                }
+            });
+        }
+        
+        function generateReport() {
+            log('========================================', 'log-score');
+            log('📊 测试报告', 'log-score');
+            log('========================================', 'log-score');
+            log(`总分数：${testState.score}`, 'log-score');
+            log(`总点击：${testState.clicks}`, 'log-info');
+            log(`总命中：${testState.hits}`, 'log-info');
+            log(`命中率：${testState.clicks > 0 ? Math.round((testState.hits/testState.clicks)*100) : 0}%`, 'log-info');
+            log(`最高连击：x${testState.maxCombo}`, 'log-info');
+            log('========================================', 'log-score');
+            
+            if (testState.score >= 50) {
+                log('✅ Bug 修复验证通过！', 'log-hit');
+                log('在 50+ 分后仍能正常得分，问题已解决。', 'log-hit');
+            } else {
+                log('⚠️ 测试未达到 50 分，无法完全验证 Bug 修复', 'log-warning');
+            }
+        }
+        
+        window.addEventListener('beforeunload', () => {
+            stopTest();
+        });
+        
+        log('调试测试工具已加载。点击"开始自动化测试"按钮开始验证。');
+        log('此工具将模拟完整的游戏过程，验证 0-100 分的计分逻辑。');
+        updateDisplay();
     </script>
 </body>
 </html>
