@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打地鼠 - 自动化测试</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        #log {
+            background: #000;
+            padding: 15px;
+            border-radius: 5px;
+            height: 400px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .log-entry { margin: 2px 0; }
+        .log-hit { color: #0f0; }
+        .log-miss { color: #f00; }
+        .log-spawn { color: #0af; }
+        .log-score { color: #ff0; font-weight: bold; }
+        .log-error { color: #f0f; font-weight: bold; }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px 5px;
+            cursor: pointer;
+        }
+        #status {
+            font-size: 18px;
+            margin: 20px 0;
+            padding: 10px;
+            background: #333;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 打地鼠 - 自动化 Bug 测试</h1>
+    
+    <div id="status">
+        分数：<span id="testScore">0</span> | 
+        点击次数：<span id="clickCount">0</span> | 
+        命中次数：<span id="hitCount">0</span> | 
+        状态：<span id="testStatus">就绪</span>
+    </div>
+    
+    <button onclick="startTest()">开始测试 (模拟 50+ 分)</button>
+    <button onclick="stopTest()">停止测试</button>
+    <button onclick="clearLog()">清空日志</button>
+    
+    <h3>测试日志:</h3>
+    <div id="log"></div>
+    
+    <script>
+        // 测试配置
+        const TEST_CONFIG = {
+            CLICK_INTERVAL_MIN: 400,  // 最小点击间隔 (ms)
+            CLICK_INTERVAL_MAX: 800,  // 最大点击间隔 (ms)
+            TARGET_SCORE: 60,         // 目标分数
+            GAME_DURATION: 30000      // 游戏时长 (ms)
+        };
+        
+        // 测试状态
+        let testState = {
+            isRunning: false,
+            score: 0,
+            clicks: 0,
+            hits: 0,
+            currentMoleIndex: -1,
+            moleAvailable: false,
+            timers: []
+        };
+        
+        // 日志函数
+        function log(message, type = '') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + type;
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+            entry.textContent = `[${time}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        function updateStatus() {
+            document.getElementById('testScore').textContent = testState.score;
+            document.getElementById('clickCount').textContent = testState.clicks;
+            document.getElementById('hitCount').textContent = testState.hits;
+        }
+        
+        // 模拟地鼠出现
+        function spawnMole() {
+            if (!testState.isRunning) return;
+            
+            const newIndex = Math.floor(Math.random() * 9);
+            testState.currentMoleIndex = newIndex;
+            testState.moleAvailable = true;
+            
+            log(`[SPAWN] 地鼠出现在位置 ${newIndex}`, 'log-spawn');
+            
+            // 地鼠停留 1500ms 后消失
+            const disappearTimer = setTimeout(() => {
+                if (testState.moleAvailable && testState.currentMoleIndex === newIndex) {
+                    log(`[DESPAWN] 地鼠 ${newIndex} 自动消失`, 'log-miss');
+                    testState.moleAvailable = false;
+                    
+                    // 300ms 后生成新地鼠
+                    const spawnTimer = setTimeout(() => {
+                        if (testState.isRunning) spawnMole();
+                    }, 300);
+                    testState.timers.push(spawnTimer);
+                }
+            }, 1500);
+            testState.timers.push(disappearTimer);
+            
+            // 模拟玩家点击
+            scheduleClick();
+        }
+        
+        // 模拟玩家点击
+        function scheduleClick() {
+            if (!testState.isRunning || !testState.moleAvailable) return;
+            
+            const delay = Math.floor(Math.random() * 
+                (TEST_CONFIG.CLICK_INTERVAL_MAX - TEST_CONFIG.CLICK_INTERVAL_MIN + 1)) + 
+                TEST_CONFIG.CLICK_INTERVAL_MIN;
+            
+            const clickTimer = setTimeout(() => {
+                if (!testState.isRunning || !testState.moleAvailable) return;
+                
+                testState.clicks++;
+                const clickedIndex = testState.currentMoleIndex; // 模拟玩家点击当前地鼠
+                
+                log(`[CLICK] 点击位置 ${clickedIndex} (第 ${testState.clicks} 次点击)`, '');
+                
+                if (clickedIndex === testState.currentMoleIndex && testState.moleAvailable) {
+                    // 命中
+                    testState.hits++;
+                    const combo = Math.min(Math.floor(testState.hits / 3) + 1, 5);
+                    const points = 10 * combo;
+                    testState.score += points;
+                    
+                    log(`[HIT] 命中！+${points} 分 (连击 x${combo}), 总分：${testState.score}`, 'log-hit');
+                    
+                    testState.moleAvailable = false;
+                    updateStatus();
+                    
+                    // 检查是否达到目标分数
+                    if (testState.score >= TEST_CONFIG.TARGET_SCORE) {
+                        log(`[TEST] ✓ 达到目标分数 ${testState.score} >= ${TEST_CONFIG.TARGET_SCORE}`, 'log-score');
+                        log(`[TEST] 测试结果：${testState.hits} 次命中 / ${testState.clicks} 次点击 = ${(testState.hits/testState.clicks*100).toFixed(1)}% 命中率`, 'log-score');
+                        
+                        // 继续测试到 100 分
+                        if (testState.score >= 100) {
+                            log(`[TEST] ✓✓✓ 测试完成！最终分数：${testState.score}`, 'log-score');
+                            stopTest();
+                            return;
+                        }
+                    }
+                    
+                    // 500ms 后生成新地鼠
+                    const spawnTimer = setTimeout(() => {
+                        if (testState.isRunning) spawnMole();
+                    }, 500);
+                    testState.timers.push(spawnTimer);
+                } else {
+                    log(`[MISS] 未命中`, 'log-miss');
+                }
+            }, delay);
+            testState.timers.push(clickTimer);
+        }
+        
+        function startTest() {
+            if (testState.isRunning) {
+                log('[TEST] 测试已在运行', 'log-error');
+                return;
+            }
+            
+            testState = {
+                isRunning: true,
+                score: 0,
+                clicks: 0,
+                hits: 0,
+                currentMoleIndex: -1,
+                moleAvailable: false,
+                timers: []
+            };
+            
+            document.getElementById('testStatus').textContent = '测试中...';
+            log('========================================', 'log-score');
+            log('[TEST] 开始测试！目标分数：' + TEST_CONFIG.TARGET_SCORE, 'log-score');
+            log('[TEST] 配置：点击间隔 ' + TEST_CONFIG.CLICK_INTERVAL_MIN + '-' + TEST_CONFIG.CLICK_INTERVAL_MAX + 'ms', 'log-score');
+            log('========================================', 'log-score');
+            
+            // 开始生成地鼠
+            spawnMole();
+            updateStatus();
+        }
+        
+        function stopTest() {
+            testState.isRunning = false;
+            
+            // 清除所有定时器
+            testState.timers.forEach(timer => clearTimeout(timer));
+            testState.timers = [];
+            
+            document.getElementById('testStatus').textContent = '已停止';
+            log('[TEST] 测试停止', 'log-error');
+            log(`[TEST] 最终统计：分数=${testState.score}, 点击=${testState.clicks}, 命中=${testState.hits}`, 'log-score');
+        }
+        
+        // 页面卸载时清理
+        window.addEventListener('beforeunload', () => {
+            stopTest();
+        });
+        
+        log('测试页面已加载。点击"开始测试"按钮模拟游戏过程。');
+        log('此测试将模拟玩家快速点击地鼠，验证得分逻辑在 50+ 分时是否正常工作。');
+    </script>
+</body>
+</html>

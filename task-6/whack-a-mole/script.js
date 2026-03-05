@@ -12,9 +12,9 @@ const CONFIG = {
     BASE_SCORE: 10,              // 基础得分
     MAX_COMBO: 5,                // 最大连击倍数
     COMBO_TIMEOUT: 2000,         // 连击超时时间（毫秒）
-    MOLE_MIN_INTERVAL: 800,      // 地鼠出现最小间隔（毫秒）
-    MOLE_MAX_INTERVAL: 1500,     // 地鼠出现最大间隔（毫秒）
     MOLE_SHOW_DURATION: 1500,    // 地鼠停留时间（毫秒）
+    HIT_RESPAWN_DELAY: 500,      // 命中后生成新地鼠的延迟（毫秒）
+    MISS_RESPAWN_DELAY: 300,     // 地鼠自动缩回后生成新地鼠的延迟（毫秒）
     COMBO_ANIMATION_DURATION: 500 // 连击动画时长（毫秒）
 };
 
@@ -228,19 +228,18 @@ function endGame() {
 // ============================================
 /**
  * 启动地鼠随机出现逻辑
- * 使用 setInterval 定时生成地鼠
- * 地鼠出现间隔在 MIN_INTERVAL 和 MAX_INTERVAL 之间随机
+ * 立即生成第一个地鼠，后续由 handleHit/showMole 中的 setTimeout 链式调用
+ * 修复：移除 setInterval，避免定时器冲突导致的状态混乱
  */
 function startMoleSpawning() {
     // 立即生成第一个地鼠
     spawnMole();
     
-    // 设置定时器，随机间隔生成地鼠
-    gameState.moleTimer = setInterval(() => {
-        if (gameState.isPlaying) {
-            spawnMole();
-        }
-    }, getRandomInterval(CONFIG.MOLE_MIN_INTERVAL, CONFIG.MOLE_MAX_INTERVAL));
+    // 修复：不再使用 setInterval，避免与 handleHit/showMole 中的 setTimeout 冲突
+    // 地鼠生成现在完全由以下两个事件驱动：
+    // 1. 玩家命中地鼠后 500ms
+    // 2. 地鼠自动缩回后 300ms
+    console.log('[SPAWN] 地鼠生成系统启动（事件驱动模式）');
 }
 
 /**
@@ -249,6 +248,8 @@ function startMoleSpawning() {
  * 避免连续在同一位置出现
  */
 function spawnMole() {
+    console.log(`[SPAWN] 开始生成地鼠，currentMoleIndex=${gameState.currentMoleIndex}`);
+    
     // 先隐藏之前的地鼠
     hideMole(gameState.currentMoleIndex);
     
@@ -259,6 +260,7 @@ function spawnMole() {
     } while (newIndex === gameState.currentMoleIndex && elements.holes.length > 1);
     
     gameState.currentMoleIndex = newIndex;
+    console.log(`[SPAWN] 新地鼠位置：${newIndex}`);
     
     // 显示地鼠
     showMole(newIndex);
@@ -269,7 +271,10 @@ function spawnMole() {
  * @param {number} index - 地鼠洞索引（0-8）
  */
 function showMole(index) {
-    if (index < 0 || index >= elements.holes.length) return;
+    if (index < 0 || index >= elements.holes.length) {
+        console.log(`[SHOW] 无效索引 ${index}, 跳过`);
+        return;
+    }
     
     const hole = elements.holes[index];
     const mole = hole.querySelector('.mole');
@@ -277,17 +282,23 @@ function showMole(index) {
     if (mole) {
         // 添加向上动画类，地鼠冒出
         mole.classList.add('up');
+        console.log(`[SHOW] 地鼠 ${index} 冒出 (停留 ${CONFIG.MOLE_SHOW_DURATION}ms)`);
         
         // 设置地鼠在 CONFIG.MOLE_SHOW_DURATION 后自动缩回（如果没被击中）
         setTimeout(() => {
+            console.log(`[SHOW] ${CONFIG.MOLE_SHOW_DURATION}ms 定时器触发，检查 currentMoleIndex=${gameState.currentMoleIndex}, index=${index}`);
             if (gameState.currentMoleIndex === index && gameState.isPlaying) {
+                console.log(`[SHOW] 地鼠 ${index} 自动缩回`);
                 hideMole(index);
                 // 自动缩回后，稍后生成新的地鼠
                 setTimeout(() => {
                     if (gameState.isPlaying) {
+                        console.log('[SHOW] 地鼠缩回后生成新地鼠');
                         spawnMole();
                     }
-                }, 300);
+                }, CONFIG.MISS_RESPAWN_DELAY);
+            } else {
+                console.log(`[SHOW] 跳过缩回：currentMoleIndex=${gameState.currentMoleIndex}, isPlaying=${gameState.isPlaying}`);
             }
         }, CONFIG.MOLE_SHOW_DURATION);
     }
@@ -339,13 +350,21 @@ function getRandomInterval(min, max) {
  * @param {number} index - 被点击的地鼠洞索引（0-8）
  */
 function handleHoleClick(index) {
+    // 调试日志：记录每次点击
+    console.log(`[CLICK] 点击洞 ${index}, currentMoleIndex=${gameState.currentMoleIndex}, isPlaying=${gameState.isPlaying}, score=${gameState.score}`);
+    
     // 游戏未进行时忽略点击
-    if (!gameState.isPlaying) return;
+    if (!gameState.isPlaying) {
+        console.log('[CLICK] 忽略：游戏未进行');
+        return;
+    }
     
     // 命中判定：检查点击的是否是当前地鼠位置
     if (index === gameState.currentMoleIndex) {
+        console.log(`[CLICK] 命中！洞 ${index}`);
         handleHit(index);
     } else {
+        console.log(`[CLICK] 未命中！洞 ${index} (地鼠在 ${gameState.currentMoleIndex})`);
         handleMiss(index);
     }
 }
@@ -365,17 +384,22 @@ function handleHit(index) {
         if (gameState.combo > gameState.maxCombo) {
             gameState.maxCombo = gameState.combo;
         }
+        console.log(`[HIT] 连击！combo: ${gameState.combo - 1} → ${gameState.combo}`);
     } else {
         // 重置连击
         gameState.combo = 1;
+        console.log(`[HIT] 连击中断，重置为 x1 (上次命中：${gameState.lastHitTime > 0 ? now - gameState.lastHitTime + 'ms 前' : '无'})`);
     }
     
     gameState.lastHitTime = now;
     
     // 计算得分：基础分 × 连击倍数
     const points = CONFIG.BASE_SCORE * gameState.combo;
+    const oldScore = gameState.score;
     gameState.score += points;
     gameState.molesHit++;
+    
+    console.log(`[HIT] 得分计算：${CONFIG.BASE_SCORE} × ${gameState.combo} = ${points}, 分数：${oldScore} → ${gameState.score}`);
     
     // 播放击中音效
     playSound(elements.hitSound);
@@ -392,13 +416,17 @@ function handleHit(index) {
     // 隐藏当前地鼠，准备生成新的
     hideMole(index);
     gameState.currentMoleIndex = -1;
+    console.log(`[HIT] 隐藏地鼠 ${index}, currentMoleIndex = -1, ${CONFIG.HIT_RESPAWN_DELAY}ms 后生成新地鼠`);
     
     // 稍后生成新的地鼠
     setTimeout(() => {
         if (gameState.isPlaying) {
+            console.log('[HIT] 命中后定时器触发，生成新地鼠');
             spawnMole();
+        } else {
+            console.log('[HIT] 命中后定时器触发，但游戏已结束');
         }
-    }, 500);
+    }, CONFIG.HIT_RESPAWN_DELAY);
     
     console.log(`🎯 命中！+${points}分，连击 x${gameState.combo}，总分：${gameState.score}`);
 }
