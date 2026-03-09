@@ -8,6 +8,7 @@ import { createClient } from 'redis';
 
 import authRoutes from './routes/auth';
 import gameRoutes from './routes/game';
+import friendRoutes from './routes/friends';
 import { initializeSocket } from './sockets/gameSocket';
 import { initializeVoiceSocket } from './sockets/voiceSocket';
 import { GameService } from './services/gameService';
@@ -33,6 +34,7 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/game', gameRoutes);
+app.use('/api/friends', friendRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

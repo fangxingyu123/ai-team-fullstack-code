@@ -19,7 +19,7 @@ class SocketManager: NSObject {
     var onRoomJoined: ((GameState, Player) -> Void)?
     var onPlayerJoined: ((Player) -> Void)?
     var onPlayerLeft: ((String) -> Void)?
-    var onGameStarted: ((PlayerRole, [Player]) -> Void)?
+    var onGameStarted: ((PlayerRole, [Player], String?) -> Void)? // role, players, voiceRoomId
     var onGameStateUpdate: ((GameState) -> Void)?
     var onMeetingStarted: ((Player?) -> Void)?
     var onVotingResult: ((Player?, Bool) -> Void)?

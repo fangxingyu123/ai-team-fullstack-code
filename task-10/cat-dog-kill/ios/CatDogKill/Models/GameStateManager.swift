@@ -178,16 +178,20 @@ class GameStateManager: ObservableObject {
     @Published var roomCode: String = ""
     @Published var errorMessage: String?
     @Published var isConnected: Bool = false
+    @Published var voiceRoomId: String?
+    @Published var isVoiceConnected: Bool = false
     
     private var socketManager: SocketManager?
+    private var voiceChatManager: VoiceChatManager?
     private var cancellables = Set<AnyCancellable>()
     
-    init() {
-        setupSocket()
+    init(serverURL: String = "ws://localhost:3000") {
+        setupSocket(serverURL: serverURL)
+        setupVoiceChat(serverURL: serverURL)
     }
     
-    private func setupSocket() {
-        socketManager = SocketManager()
+    private func setupSocket(serverURL: String) {
+        socketManager = SocketManager(serverURL: serverURL)
         
         socketManager?.onConnect { [weak self] in
             self?.isConnected = true
@@ -250,6 +254,89 @@ class GameStateManager: ObservableObject {
         socketManager?.onError { [weak self] message in
             self?.errorMessage = message
         }
+        
+        // Handle game started with voice room info
+        socketManager?.onGameStarted { [weak self] role, players in
+            self?.myRole = role
+            if let game = self?.currentGame {
+                self?.currentGame = GameState(
+                    id: game.id,
+                    code: game.code,
+                    phase: .playing,
+                    players: players,
+                    tasks: game.tasks,
+                    settings: game.settings
+                )
+            }
+            // Voice room will be joined automatically via separate callback
+        }
+    }
+    
+    private func setupVoiceChat(serverURL: String) {
+        // Voice chat will be initialized when game starts
+        print("🎙️ GameStateManager: Voice chat ready to initialize")
+    }
+    
+    /// 初始化语音聊天（游戏开始时调用）
+    func initializeVoiceChat(roomId: String) {
+        guard voiceRoomId == nil else {
+            print("🎙️ GameStateManager: Already in voice room")
+            return
+        }
+        
+        voiceRoomId = roomId
+        
+        // Get username from myPlayer or use default
+        let username = myPlayer?.username ?? "Player"
+        let userId = myPlayer?.id ?? UUID().uuidString
+        
+        voiceChatManager = VoiceChatManager(
+            userId: userId,
+            username: username,
+            serverURL: serverURL ?? "ws://localhost:3000"
+        )
+        
+        voiceChatManager?.onConnectionStateChange = { [weak self] connected in
+            DispatchQueue.main.async {
+                self?.isVoiceConnected = connected
+                print("🎙️ GameStateManager: Voice connection state = \(connected)")
+            }
+        }
+        
+        voiceChatManager?.onError = { [weak self] error in
+            DispatchQueue.main.async {
+                self?.errorMessage = "语音错误：\(error)"
+                print("🎙️ GameStateManager: Voice error - \(error)")
+            }
+        }
+        
+        // Connect and join voice room
+        voiceChatManager?.connect()
+        
+        // Small delay to ensure connection before joining room
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.voiceChatManager?.joinRoom(roomId: roomId)
+            print("🎙️ GameStateManager: Joined voice room \(roomId)")
+        }
+    }
+    
+    /// 离开语音聊天
+    func leaveVoiceChat() {
+        voiceChatManager?.leaveRoom()
+        voiceRoomId = nil
+    }
+    
+    /// 断开语音聊天
+    func disconnectVoiceChat() {
+        voiceChatManager?.disconnect()
+        voiceChatManager = nil
+        voiceRoomId = nil
+        isVoiceConnected = false
+    }
+    
+    /// 设置语音静音
+    func setVoiceMuted(_ muted: Bool) {
+        voiceChatManager?.setMuted(muted)
     }
     
     func connect() {
