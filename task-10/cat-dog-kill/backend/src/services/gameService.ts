@@ -1,7 +1,10 @@
 import { RedisClientType } from 'redis';
 import { v4 as uuidv4 } from 'uuid';
-import { GameState, Player, Role, GamePhase, Task, GameSettings, Sabotage, Vote, ROLE_CONFIGS } from '../types/game';
+import { GameState, Player, Role, GamePhase, Task, GameSettings, Sabotage, Vote, ROLE_CONFIGS, RoleTeam } from '../types/game';
 import { generateMapTasks, getMap, MAPS } from '../types/maps';
+import { achievementService } from './achievementService';
+import { ConditionType } from '../models/Achievement';
+import User from '../models/User';
 
 const DEFAULT_SETTINGS: GameSettings = {
   mapId: 'map1',
@@ -381,7 +384,77 @@ export class GameService {
     game.endedAt = Date.now();
 
     await this.saveGameToRedis(game);
+
+    // 更新成就
+    await this.updateAchievementsOnGameEnd(game, winner);
+
     return game;
+  }
+
+  /**
+   * 游戏结束时更新成就
+   */
+  private async updateAchievementsOnGameEnd(game: GameState, winner: Role | 'cats' | 'dogs' | 'fox'): Promise<void> {
+    try {
+      const gameDurationSeconds = game.endedAt && game.startedAt 
+        ? (game.endedAt - game.startedAt) / 1000 
+        : 0;
+
+      // 确定各阵营是否胜利
+      const catsWon = winner === 'cats' || winner === Role.CAT;
+      const dogsWon = winner === 'dogs' || winner === Role.DOG;
+      const foxWon = winner === 'fox' || winner === Role.FOX;
+
+      for (const player of game.players.values()) {
+        if (!player.userId) continue; // 需要用户 ID 才能更新成就
+
+        // 判断该玩家是否胜利
+        let won = false;
+        if (player.role === Role.FOX) {
+          won = foxWon;
+        } else if (player.role === Role.DOG) {
+          won = dogsWon;
+        } else {
+          won = catsWon;
+        }
+
+        // 获取玩家统计数据
+        const user = await User.findById(player.userId);
+        if (!user) continue;
+
+        // 计算正确投票次数
+        const correctVotes = game.votes?.filter(v => {
+          const voter = game.players.get(v.voterId);
+          if (!voter || voter.role === Role.DOG) return false;
+          const votedPlayer = game.players.get(v.targetId);
+          if (!votedPlayer) return false;
+          return votedPlayer.role === Role.DOG && voter.id !== votedPlayer.id;
+        }).length || 0;
+
+        // 计算破坏次数
+        const sabotages = game.sabotages?.filter(s => s.activatedBy === player.id).length || 0;
+
+        // 更新成就
+        await achievementService.onGameEnd(
+          player.userId,
+          won,
+          player.role,
+          player.role === Role.DOG ? RoleTeam.DOG : player.role === Role.FOX ? RoleTeam.NEUTRAL : RoleTeam.CAT,
+          player.tasksCompleted,
+          correctVotes > 0,
+          false, // meetingCalled - 需要额外追踪
+          sabotages,
+          0, // investigations - 需要额外追踪
+          false, // hunterKill - 需要额外追踪
+          gameDurationSeconds
+        );
+
+        // 更新连胜/连败
+        await achievementService.updateStreak(player.userId, won);
+      }
+    } catch (error) {
+      console.error('Error updating achievements on game end:', error);
+    }
   }
 
   // Get game by code

@@ -9,11 +9,13 @@ import { createClient } from 'redis';
 import authRoutes from './routes/auth';
 import gameRoutes from './routes/game';
 import friendRoutes from './routes/friends';
+import achievementRoutes from './routes/achievements';
 import { initializeSocket } from './sockets/gameSocket';
 import { initializeVoiceSocket } from './sockets/voiceSocket';
 import { initializeFriendSocket } from './sockets/friendSocket';
 import { GameService } from './services/gameService';
 import { VoiceService } from './services/voiceService';
+import { achievementService } from './services/achievementService';
 
 dotenv.config();
 
@@ -36,6 +38,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/game', gameRoutes);
 app.use('/api/friends', friendRoutes);
+app.use('/api/achievements', achievementRoutes);
 
 // Initialize Friend Socket
 initializeFriendSocket(io);
@@ -73,6 +76,10 @@ async function startServer() {
     const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/cat-dog-kill';
     await mongoose.connect(mongoUri);
     console.log('✅ Connected to MongoDB');
+
+    // Initialize default achievements
+    await achievementService.initializeDefaultAchievements();
+    console.log('✅ Achievements initialized');
 
     // Start HTTP server
     httpServer.listen(PORT, () => {
