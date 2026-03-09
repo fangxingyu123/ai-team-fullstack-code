@@ -17,13 +17,17 @@
 
 ## 🎮 核心玩法
 
-### 角色系统
+### 角色系统 (5 种角色)
 
-| 角色 | 阵营 | 目标 | 能力 |
-|------|------|------|------|
-| 🐱 猫咪 | 好人 | 完成所有任务或找出所有狗狗 | 完成任务、发起会议、投票 |
-| 🐶 狗狗 | 坏人 | 淘汰足够多的猫咪 | 破坏设施、假装任务 |
-| 🦊 狐狸 | 中立 | 存活到最后 | 特殊胜利条件 |
+| 角色 | 阵营 | 目标 | 特殊能力 |
+|------|------|------|----------|
+| 🐱 猫咪 | 好人 | 完成所有任务或找出所有狗狗 | 无（基础角色） |
+| 🐶 狗狗 | 坏人 | 淘汰足够多的猫咪 | 破坏设施 |
+| 🦊 狐狸 | 中立 | 存活到最后 | 单独胜利条件 |
+| 🕵️ 侦探 | 好人 | 与好人阵营共同胜利 | 调查身份（每局 3 次） |
+| 🎯 猎人 | 好人 | 与好人阵营共同胜利 | 死亡反击（每局 1 次） |
+
+📖 详细角色说明请查看 [docs/ROLES.md](docs/ROLES.md)
 
 ### 游戏流程
 
@@ -178,6 +182,10 @@ emergency_meeting: {}
 cast_vote: { targetId }
 chat_message: { message }
 sabotage: { type }
+
+// 角色技能（Phase 2 新增）
+investigate: { targetId }           // 侦探调查
+hunter_eliminate: { targetId }      // 猎人消除
 ```
 
 #### 服务器 → 客户端
@@ -193,6 +201,10 @@ meeting_started: { deadPlayer }
 voting_result: { ejectedPlayer, skipped }
 game_ended: { winner }
 error: { message }
+
+// 角色技能（Phase 2 新增）
+investigation_result: { targetPlayerId, targetRole, targetTeam }
+hunter_elimination: { hunterId, targetId }
 ```
 
 ---
@@ -212,7 +224,7 @@ error: { message }
 
 ### 第二阶段 🚧
 
-- [ ] 更多角色（狐狸、侦探等）
+- [x] 更多角色（狐狸、侦探、猎人）✅
 - [ ] 更多地图（3-5 张）
 - [ ] 语音聊天
 - [ ] 好友系统

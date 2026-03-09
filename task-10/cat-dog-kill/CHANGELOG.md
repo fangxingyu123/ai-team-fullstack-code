@@ -1,5 +1,110 @@
 # 📋 项目开发日志
 
+## 2026-03-09 - 角色系统扩展 ✅
+
+### 今日完成
+
+#### 新角色系统 (Phase 2 - 角色扩展)
+
+**后端 (TypeScript)**
+
+- [x] **类型定义扩展** (`backend/src/types/game.ts`)
+  - 新增侦探 (Detective) 角色
+  - 新增猎人 (Hunter) 角色
+  - 完善狐狸 (Fox) 胜利条件
+  - 添加角色配置系统 (`ROLE_CONFIGS`)
+  - 添加角色属性：阵营、图标、颜色、能力描述
+  - 扩展 `GameSettings` 支持新角色数量配置
+  - 扩展 `Player` 接口支持特殊能力状态
+  - 新增 `InvestigationResult` 和 `HunterElimination` 类型
+
+- [x] **游戏服务扩展** (`backend/src/services/gameService.ts`)
+  - 更新角色分配逻辑支持侦探和猎人
+  - 侦探：每局 3 次调查机会
+  - 猎人：死亡时可使用 1 次消除技能
+  - 完善胜利条件判定逻辑
+  - 新增 `investigate()` 方法（侦探调查）
+  - 新增 `hunterEliminate()` 方法（猎人消除）
+  - 新增 `handlePlayerDeath()` 方法（死亡处理）
+
+- [x] **Socket 事件扩展** (`backend/src/sockets/gameSocket.ts`)
+  - 新增 `investigate` 事件处理（侦探技能）
+  - 新增 `hunter_eliminate` 事件处理（猎人技能）
+  - 新增 `investigation_result` 事件（调查结果返回）
+  - 新增 `hunter_elimination` 事件（猎人消除通知）
+
+**前端 (iOS Swift)**
+
+- [x] **游戏状态模型扩展** (`Models/GameStateManager.swift`)
+  - 扩展 `PlayerRole` 枚举（detective, hunter）
+  - 新增 `PlayerTeam` 枚举（good, bad, neutral）
+  - 添加角色显示名称、图标、阵营、能力描述
+  - 扩展 `Player` 结构支持能力状态
+  - 新增 `InvestigationResult` 和 `HunterElimination` 结构
+  - 扩展 `GameStateSettings` 支持新角色配置
+  - 新增 `investigate()` 和 `hunterEliminate()` 方法
+
+- [x] **Socket 客户端扩展** (`Network/SocketManager.swift`)
+  - 新增 `investigate(targetId:)` 方法
+  - 新增 `hunterEliminate(targetId:)` 方法
+  - 新增 `onInvestigationResult` 事件处理
+  - 新增 `onHunterElimination` 事件处理
+  - 扩展 `parsePlayer()` 支持新属性
+  - 扩展 `parseGameState()` 支持新设置
+
+**文档**
+
+- [x] **角色系统文档** (`docs/ROLES.md`)
+  - 5 种角色详细介绍
+  - 胜利条件说明
+  - 推荐配置表（4-10 人）
+  - Socket 事件 API 文档
+  - iOS 集成示例代码
+  - 平衡性说明
+  - FAQ 常见问题
+
+---
+
+### 角色系统详情
+
+| 角色 | 阵营 | 特殊能力 | 难度 |
+|------|------|----------|------|
+| 🐱 猫咪 | 好人 | 无 | ⭐ |
+| 🐶 狗狗 | 坏人 | 破坏 | ⭐⭐⭐ |
+| 🦊 狐狸 | 中立 | 单独胜利 | ⭐⭐⭐⭐⭐ |
+| 🕵️ 侦探 | 好人 | 调查身份 (3 次) | ⭐⭐⭐ |
+| 🎯 猎人 | 好人 | 死亡反击 (1 次) | ⭐⭐⭐⭐ |
+
+---
+
+### 代码统计
+
+**新增/修改文件**:
+- `backend/src/types/game.ts` - +80 行
+- `backend/src/services/gameService.ts` - +100 行
+- `backend/src/sockets/gameSocket.ts` - +60 行
+- `ios/CatDogKill/Models/GameStateManager.swift` - +120 行
+- `ios/CatDogKill/Network/SocketManager.swift` - +80 行
+- `docs/ROLES.md` - 新增 5500+ 字符
+
+**总计**: 约 500+ 行新增代码
+
+---
+
+### 下一步计划
+
+1. **测试新角色系统**
+   - 侦探调查功能测试
+   - 猎人消除功能测试
+   - 狐狸胜利条件测试
+
+2. **Phase 2 剩余功能**
+   - 更多地图（3-5 张）
+   - 好友系统
+   - 排行榜
+
+---
+
 ## 2026-03-08 - 编码阶段启动
 
 ### 今日完成

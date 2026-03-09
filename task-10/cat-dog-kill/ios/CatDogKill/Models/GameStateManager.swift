@@ -237,6 +237,16 @@ class GameStateManager: ObservableObject {
             // Handle game end
         }
         
+        socketManager?.onInvestigationResult { result in
+            // Handle investigation result (detective ability)
+            print("🔍 Investigated player \(result.targetPlayerId): \(result.targetRole)")
+        }
+        
+        socketManager?.onHunterElimination { elimination in
+            // Handle hunter elimination
+            print("🎯 Hunter \(elimination.hunterId) eliminated \(elimination.targetId)")
+        }
+        
         socketManager?.onError { [weak self] message in
             self?.errorMessage = message
         }
