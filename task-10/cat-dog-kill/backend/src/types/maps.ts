@@ -1,281 +1,344 @@
-// Map definitions for Cat Dog Kill game
+/**
+ * 地图配置和类型定义
+ * 支持多张游戏地图
+ */
 
+// 地图主题
+export enum MapTheme {
+  PARK = 'park',           // 公园
+  MANSION = 'mansion',     // 豪宅
+  HOSPITAL = 'hospital',   // 医院
+  FOREST = 'forest',       // 森林
+  SPACE = 'space'          // 太空
+}
+
+// 任务类型
+export enum TaskType {
+  SHORT = 'short',   // 短任务 (5-10 秒)
+  LONG = 'long',     // 长任务 (15-30 秒)
+  COMMON = 'common'  // 公共任务 (多人协作)
+}
+
+// 地图区域
 export interface MapZone {
   id: string;
   name: string;
-  type: 'spawn' | 'task' | 'meeting' | 'vent' | 'common';
-  position: { x: number; y: number };
-  size: { width: number; height: number };
-  description?: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  taskCount: number;
+  taskType?: TaskType;
 }
 
-export interface MapTaskLocation {
-  taskId: string;
-  zoneId: string;
-  position: { x: number; y: number };
-}
-
-export interface MapVent {
+// 任务位置
+export interface TaskLocation {
   id: string;
-  position: { x: number; y: number };
-  connections: string[]; // Connected vent IDs
+  zoneId: string;
+  x: number;
+  y: number;
+  name: string;
+  description: string;
+  type: TaskType;
+  duration: number; // 秒
 }
 
+// 障碍物
+export interface Obstacle {
+  id: string;
+  type: 'wall' | 'door' | 'decoration';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  interactable?: boolean;
+}
+
+// 破坏点
+export interface SabotagePoint {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  sabotageType: 'lock_door' | 'lights' | 'comms' | 'power';
+  zoneId?: string;
+}
+
+// 游戏地图配置
 export interface GameMap {
   id: string;
   name: string;
   description: string;
-  thumbnail?: string;
+  theme: MapTheme;
   size: { width: number; height: number };
   zones: MapZone[];
-  taskLocations: MapTaskLocation[];
-  vents: MapVent[];
-  spawnPoints: { x: number; y: number }[];
+  tasks: TaskLocation[];
+  obstacles: Obstacle[];
+  sabotagePoints: SabotagePoint[];
   meetingPoint: { x: number; y: number };
-  obstacles: { x: number; y: number; width: number; height: number }[];
+  backgroundColor: string;
+  gridColor: string;
+  recommendedPlayers: { min: number; max: number };
+  difficulty: 1 | 2 | 3; // 1=简单，2=中等，3=困难
 }
 
-// Map templates
+// 所有地图配置
 export const MAPS: Record<string, GameMap> = {
-  'map1': {
+  map1: {
     id: 'map1',
-    name: '🏠 温馨小屋',
-    description: '基础地图 - 适合新手教学',
+    name: '宠物乐园',
+    description: '一个阳光明媚的宠物主题公园，适合新手教学',
+    theme: MapTheme.PARK,
     size: { width: 100, height: 100 },
+    backgroundColor: '#4CAF50',
+    gridColor: '#8BC34A',
+    recommendedPlayers: { min: 4, max: 6 },
+    difficulty: 1,
+    meetingPoint: { x: 50, y: 40 },
     zones: [
-      { id: 'living_room', name: '客厅', type: 'common', position: { x: 50, y: 50 }, size: { width: 30, height: 30 } },
-      { id: 'kitchen', name: '厨房', type: 'task', position: { x: 20, y: 30 }, size: { width: 20, height: 20 } },
-      { id: 'bedroom', name: '卧室', type: 'task', position: { x: 80, y: 30 }, size: { width: 20, height: 20 } },
-      { id: 'bathroom', name: '浴室', type: 'task', position: { x: 20, y: 70 }, size: { width: 15, height: 15 } },
-      { id: 'garden', name: '花园', type: 'task', position: { x: 80, y: 70 }, size: { width: 20, height: 20 } },
-      { id: 'meeting_point', name: '会议桌', type: 'meeting', position: { x: 50, y: 50 }, size: { width: 10, height: 10 } },
-      { id: 'spawn_1', name: '出生点 1', type: 'spawn', position: { x: 30, y: 50 }, size: { width: 5, height: 5 } },
-      { id: 'spawn_2', name: '出生点 2', type: 'spawn', position: { x: 70, y: 50 }, size: { width: 5, height: 5 } },
+      { id: 'zone1', name: '喂食区', x: 15, y: 20, width: 20, height: 15, taskCount: 2 },
+      { id: 'zone2', name: '医疗室', x: 85, y: 20, width: 15, height: 15, taskCount: 1 },
+      { id: 'zone3', name: '休息区', x: 15, y: 50, width: 15, height: 15, taskCount: 1 },
+      { id: 'zone4', name: '游戏区', x: 85, y: 50, width: 15, height: 15, taskCount: 2 },
+      { id: 'zone5', name: '美容室', x: 15, y: 80, width: 20, height: 15, taskCount: 2 },
+      { id: 'zone6', name: '储藏室', x: 85, y: 80, width: 15, height: 15, taskCount: 2 }
     ],
-    taskLocations: [
-      { taskId: 'feed_pets', zoneId: 'kitchen', position: { x: 25, y: 35 } },
-      { taskId: 'clean_litter', zoneId: 'bathroom', position: { x: 25, y: 75 } },
-      { taskId: 'groom_pets', zoneId: 'bedroom', position: { x: 85, y: 35 } },
-      { taskId: 'water_plants', zoneId: 'garden', position: { x: 85, y: 75 } },
-      { taskId: 'clean_floor', zoneId: 'living_room', position: { x: 50, y: 60 } },
-    ],
-    vents: [],
-    spawnPoints: [
-      { x: 30, y: 50 },
-      { x: 70, y: 50 },
-      { x: 50, y: 30 },
-      { x: 50, y: 70 },
-    ],
-    meetingPoint: { x: 50, y: 50 },
+    tasks: [], // 将在游戏初始化时生成
     obstacles: [
-      { x: 40, y: 40, width: 20, height: 20 }, // Central furniture
+      { id: 'obs1', type: 'decoration', x: 50, y: 30, width: 10, height: 10 } // 喷泉
+    ],
+    sabotagePoints: [
+      { id: 'sab1', name: '大门', x: 50, y: 5, sabotageType: 'lock_door' },
+      { id: 'sab2', name: '路灯', x: 30, y: 10, sabotageType: 'lights' },
+      { id: 'sab3', name: '广播室', x: 70, y: 10, sabotageType: 'comms' }
     ]
   },
-  
-  'map2': {
+
+  map2: {
     id: 'map2',
-    name: '🏢 宠物医院',
-    description: '中型地图 - 多个房间和走廊',
-    size: { width: 120, height: 100 },
+    name: '喵喵别墅',
+    description: '豪华的室内豪宅，有多个房间和走廊',
+    theme: MapTheme.MANSION,
+    size: { width: 100, height: 100 },
+    backgroundColor: '#FF9800',
+    gridColor: '#D7CCC8',
+    recommendedPlayers: { min: 5, max: 8 },
+    difficulty: 2,
+    meetingPoint: { x: 50, y: 50 },
     zones: [
-      { id: 'reception', name: '接待处', type: 'common', position: { x: 60, y: 50 }, size: { width: 25, height: 20 } },
-      { id: 'exam_room_1', name: '诊室 1', type: 'task', position: { x: 20, y: 30 }, size: { width: 20, height: 20 } },
-      { id: 'exam_room_2', name: '诊室 2', type: 'task', position: { x: 100, y: 30 }, size: { width: 20, height: 20 } },
-      { id: 'surgery', name: '手术室', type: 'task', position: { x: 60, y: 20 }, size: { width: 20, height: 15 } },
-      { id: 'pharmacy', name: '药房', type: 'task', position: { x: 20, y: 70 }, size: { width: 15, height: 15 } },
-      { id: 'ward', name: '住院部', type: 'task', position: { x: 100, y: 70 }, size: { width: 20, height: 20 } },
-      { id: 'meeting_room', name: '会议室', type: 'meeting', position: { x: 60, y: 50 }, size: { width: 12, height: 10 } },
-      { id: 'spawn_1', name: '入口', type: 'spawn', position: { x: 60, y: 80 }, size: { width: 5, height: 5 } },
-      { id: 'spawn_2', name: '后门', type: 'spawn', position: { x: 60, y: 20 }, size: { width: 5, height: 5 } },
+      { id: 'zone1', name: '卧室 A', x: 15, y: 15, width: 20, height: 15, taskCount: 1 },
+      { id: 'zone2', name: '卧室 B', x: 85, y: 15, width: 20, height: 15, taskCount: 1 },
+      { id: 'zone3', name: '厨房', x: 15, y: 50, width: 20, height: 20, taskCount: 2 },
+      { id: 'zone4', name: '客厅', x: 50, y: 40, width: 30, height: 20, taskCount: 0 },
+      { id: 'zone5', name: '书房', x: 85, y: 50, width: 15, height: 20, taskCount: 2 },
+      { id: 'zone6', name: '洗衣房', x: 15, y: 85, width: 20, height: 15, taskCount: 2 },
+      { id: 'zone7', name: '餐厅', x: 50, y: 85, width: 20, height: 15, taskCount: 1 },
+      { id: 'zone8', name: '车库', x: 85, y: 85, width: 15, height: 15, taskCount: 1 }
     ],
-    taskLocations: [
-      { taskId: 'organize_meds', zoneId: 'pharmacy', position: { x: 25, y: 75 } },
-      { taskId: 'clean_cages', zoneId: 'ward', position: { x: 105, y: 75 } },
-      { taskId: 'sterilize_tools', zoneId: 'surgery', position: { x: 65, y: 25 } },
-      { taskId: 'check_patients', zoneId: 'exam_room_1', position: { x: 25, y: 35 } },
-      { taskId: 'update_records', zoneId: 'reception', position: { x: 60, y: 55 } },
-      { taskId: 'feed_animals', zoneId: 'ward', position: { x: 110, y: 80 } },
-    ],
-    vents: [
-      { id: 'vent_1', position: { x: 40, y: 50 }, connections: ['vent_2'] },
-      { id: 'vent_2', position: { x: 80, y: 50 }, connections: ['vent_1', 'vent_3'] },
-      { id: 'vent_3', position: { x: 60, y: 40 }, connections: ['vent_2'] },
-    ],
-    spawnPoints: [
-      { x: 60, y: 80 },
-      { x: 60, y: 20 },
-      { x: 20, y: 50 },
-      { x: 100, y: 50 },
-    ],
-    meetingPoint: { x: 60, y: 50 },
+    tasks: [],
     obstacles: [
-      { x: 45, y: 45, width: 30, height: 10 }, // Reception desk
-      { x: 55, y: 35, width: 10, height: 10 }, // Pillar
+      { id: 'obs1', type: 'wall', x: 40, y: 15, width: 20, height: 5 },
+      { id: 'obs2', type: 'wall', x: 40, y: 80, width: 20, height: 5 }
+    ],
+    sabotagePoints: [
+      { id: 'sab1', name: '前门', x: 50, y: 5, sabotageType: 'lock_door' },
+      { id: 'sab2', name: '电闸', x: 20, y: 30, sabotageType: 'lights' },
+      { id: 'sab3', name: '路由器', x: 80, y: 30, sabotageType: 'comms' }
     ]
   },
-  
-  'map3': {
+
+  map3: {
     id: 'map3',
-    name: '🏰 猫咪城堡',
-    description: '大型地图 - 多层结构，复杂路线',
-    size: { width: 150, height: 120 },
+    name: '动物医院',
+    description: '专业的动物医疗设施，纵向布局',
+    theme: MapTheme.HOSPITAL,
+    size: { width: 100, height: 120 },
+    backgroundColor: '#2196F3',
+    gridColor: '#E3F2FD',
+    recommendedPlayers: { min: 6, max: 10 },
+    difficulty: 3,
+    meetingPoint: { x: 50, y: 15 },
     zones: [
-      { id: 'throne_room', name: '王座厅', type: 'common', position: { x: 75, y: 60 }, size: { width: 30, height: 25 } },
-      { id: 'kitchen', name: '御膳房', type: 'task', position: { x: 30, y: 40 }, size: { width: 25, height: 20 } },
-      { id: 'library', name: '图书馆', type: 'task', position: { x: 120, y: 40 }, size: { width: 25, height: 20 } },
-      { id: 'treasury', name: '宝库', type: 'task', position: { x: 30, y: 80 }, size: { width: 20, height: 20 } },
-      { id: 'garden', name: '空中花园', type: 'task', position: { x: 120, y: 80 }, size: { width: 25, height: 25 } },
-      { id: 'tower', name: '瞭望塔', type: 'task', position: { x: 75, y: 20 }, size: { width: 15, height: 15 } },
-      { id: 'dungeon', name: '地牢', type: 'task', position: { x: 75, y: 100 }, size: { width: 20, height: 15 } },
-      { id: 'council_chamber', name: '议事厅', type: 'meeting', position: { x: 75, y: 60 }, size: { width: 15, height: 12 } },
-      { id: 'spawn_1', name: '正门', type: 'spawn', position: { x: 75, y: 110 }, size: { width: 5, height: 5 } },
-      { id: 'spawn_2', name: '侧门', type: 'spawn', position: { x: 20, y: 60 }, size: { width: 5, height: 5 } },
-      { id: 'spawn_3', name: '密道', type: 'spawn', position: { x: 130, y: 60 }, size: { width: 5, height: 5 } },
+      { id: 'zone1', name: '急诊室', x: 15, y: 15, width: 20, height: 15, taskCount: 2 },
+      { id: 'zone2', name: '大厅', x: 50, y: 10, width: 30, height: 15, taskCount: 0 },
+      { id: 'zone3', name: '药房', x: 85, y: 15, width: 15, height: 15, taskCount: 1 },
+      { id: 'zone4', name: '手术室', x: 15, y: 50, width: 20, height: 15, taskCount: 2 },
+      { id: 'zone5', name: '检验科', x: 50, y: 50, width: 20, height: 15, taskCount: 2 },
+      { id: 'zone6', name: '住院部 A', x: 85, y: 50, width: 15, height: 15, taskCount: 1 },
+      { id: 'zone7', name: 'X 光室', x: 15, y: 80, width: 15, height: 15, taskCount: 1 },
+      { id: 'zone8', name: '护士站', x: 50, y: 80, width: 20, height: 15, taskCount: 1 },
+      { id: 'zone9', name: '住院部 B', x: 85, y: 80, width: 15, height: 15, taskCount: 2 },
+      { id: 'zone10', name: '隔离室', x: 15, y: 105, width: 20, height: 15, taskCount: 2 },
+      { id: 'zone11', name: '太平间', x: 50, y: 105, width: 15, height: 15, taskCount: 1 },
+      { id: 'zone12', name: '员工休息', x: 85, y: 105, width: 15, height: 15, taskCount: 1 }
     ],
-    taskLocations: [
-      { taskId: 'polish_crown', zoneId: 'throne_room', position: { x: 75, y: 65 } },
-      { taskId: 'cook_feast', zoneId: 'kitchen', position: { x: 35, y: 45 } },
-      { taskId: 'organize_books', zoneId: 'library', position: { x: 125, y: 45 } },
-      { taskId: 'count_treasure', zoneId: 'treasury', position: { x: 35, y: 85 } },
-      { taskId: 'trim_hedges', zoneId: 'garden', position: { x: 125, y: 85 } },
-      { taskId: 'light_torches', zoneId: 'tower', position: { x: 75, y: 25 } },
-      { taskId: 'clean_cells', zoneId: 'dungeon', position: { x: 75, y: 105 } },
-      { taskId: 'hang_tapestries', zoneId: 'throne_room', position: { x: 65, y: 55 } },
-    ],
-    vents: [
-      { id: 'vent_1', position: { x: 50, y: 60 }, connections: ['vent_2', 'vent_4'] },
-      { id: 'vent_2', position: { x: 100, y: 60 }, connections: ['vent_1', 'vent_3'] },
-      { id: 'vent_3', position: { x: 75, y: 40 }, connections: ['vent_2', 'vent_5'] },
-      { id: 'vent_4', position: { x: 50, y: 80 }, connections: ['vent_1', 'vent_5'] },
-      { id: 'vent_5', position: { x: 100, y: 80 }, connections: ['vent_3', 'vent_4'] },
-    ],
-    spawnPoints: [
-      { x: 75, y: 110 },
-      { x: 20, y: 60 },
-      { x: 130, y: 60 },
-      { x: 75, y: 20 },
-      { x: 30, y: 40 },
-      { x: 120, y: 40 },
-    ],
-    meetingPoint: { x: 75, y: 60 },
+    tasks: [],
     obstacles: [
-      { x: 65, y: 55, width: 20, height: 10 }, // Throne
-      { x: 40, y: 50, width: 10, height: 20 }, // Pillar
-      { x: 100, y: 50, width: 10, height: 20 }, // Pillar
-      { x: 65, y: 35, width: 20, height: 10 }, // Balcony
+      { id: 'obs1', type: 'wall', x: 5, y: 35, width: 90, height: 5 },
+      { id: 'obs2', type: 'wall', x: 5, y: 70, width: 90, height: 5 }
+    ],
+    sabotagePoints: [
+      { id: 'sab1', name: '隔离门', x: 50, y: 35, sabotageType: 'lock_door' },
+      { id: 'sab2', name: '主灯', x: 50, y: 60, sabotageType: 'lights' },
+      { id: 'sab3', name: '呼叫系统', x: 50, y: 90, sabotageType: 'comms' }
     ]
   },
-  
-  'map4': {
+
+  map4: {
     id: 'map4',
-    name: '🚀 太空站',
-    description: '科幻地图 - 密闭空间，紧张刺激',
-    size: { width: 140, height: 100 },
+    name: '森林营地',
+    description: '自然环境中的露营基地，有小溪和篝火',
+    theme: MapTheme.FOREST,
+    size: { width: 120, height: 100 },
+    backgroundColor: '#8BC34A',
+    gridColor: '#AED581',
+    recommendedPlayers: { min: 5, max: 8 },
+    difficulty: 2,
+    meetingPoint: { x: 55, y: 25 },
     zones: [
-      { id: 'bridge', name: '舰桥', type: 'common', position: { x: 70, y: 50 }, size: { width: 25, height: 20 } },
-      { id: 'engine_room', name: '引擎室', type: 'task', position: { x: 30, y: 50 }, size: { width: 20, height: 25 } },
-      { id: 'lab', name: '实验室', type: 'task', position: { x: 110, y: 50 }, size: { width: 25, height: 20 } },
-      { id: 'cargo', name: '货舱', type: 'task', position: { x: 70, y: 25 }, size: { width: 20, height: 20 } },
-      { id: 'medbay', name: '医疗湾', type: 'task', position: { x: 30, y: 25 }, size: { width: 15, height: 15 } },
-      { id: 'comms', name: '通讯室', type: 'task', position: { x: 110, y: 25 }, size: { width: 15, height: 15 } },
-      { id: 'reactor', name: '反应堆', type: 'task', position: { x: 70, y: 75 }, size: { width: 20, height: 20 } },
-      { id: 'airlock', name: '气闸舱', type: 'task', position: { x: 20, y: 75 }, size: { width: 15, height: 15 } },
-      { id: 'conference', name: '会议室', type: 'meeting', position: { x: 70, y: 50 }, size: { width: 12, height: 10 } },
-      { id: 'spawn_1', name: ' docking 口', type: 'spawn', position: { x: 70, y: 90 }, size: { width: 5, height: 5 } },
+      { id: 'zone1', name: '帐篷区 A', x: 20, y: 25, width: 20, height: 15, taskCount: 1 },
+      { id: 'zone2', name: '帐篷区 B', x: 90, y: 25, width: 20, height: 15, taskCount: 1 },
+      { id: 'zone3', name: '钓鱼台', x: 90, y: 50, width: 20, height: 15, taskCount: 2 },
+      { id: 'zone4', name: '储物棚', x: 20, y: 50, width: 20, height: 15, taskCount: 2 },
+      { id: 'zone5', name: '观景台', x: 90, y: 75, width: 20, height: 15, taskCount: 2 },
+      { id: 'zone6', name: '厨房区', x: 20, y: 75, width: 20, height: 15, taskCount: 2 },
+      { id: 'zone7', name: '厕所', x: 90, y: 75, width: 15, height: 15, taskCount: 1 }
     ],
-    taskLocations: [
-      { taskId: 'fix_engine', zoneId: 'engine_room', position: { x: 35, y: 55 } },
-      { taskId: 'analyze_samples', zoneId: 'lab', position: { x: 115, y: 55 } },
-      { taskId: 'organize_cargo', zoneId: 'cargo', position: { x: 75, y: 30 } },
-      { taskId: 'treat_patients', zoneId: 'medbay', position: { x: 35, y: 30 } },
-      { taskId: 'repair_antenna', zoneId: 'comms', position: { x: 115, y: 30 } },
-      { taskId: 'calibrate_reactor', zoneId: 'reactor', position: { x: 75, y: 80 } },
-      { taskId: 'seal_airlock', zoneId: 'airlock', position: { x: 25, y: 80 } },
-      { taskId: 'navigate', zoneId: 'bridge', position: { x: 75, y: 55 } },
-    ],
-    vents: [
-      { id: 'vent_1', position: { x: 50, y: 40 }, connections: ['vent_2', 'vent_3'] },
-      { id: 'vent_2', position: { x: 90, y: 40 }, connections: ['vent_1', 'vent_4'] },
-      { id: 'vent_3', position: { x: 50, y: 60 }, connections: ['vent_1', 'vent_5'] },
-      { id: 'vent_4', position: { x: 90, y: 60 }, connections: ['vent_2', 'vent_5'] },
-      { id: 'vent_5', position: { x: 70, y: 70 }, connections: ['vent_3', 'vent_4'] },
-    ],
-    spawnPoints: [
-      { x: 70, y: 90 },
-      { x: 30, y: 50 },
-      { x: 110, y: 50 },
-      { x: 70, y: 25 },
-    ],
-    meetingPoint: { x: 70, y: 50 },
+    tasks: [],
     obstacles: [
-      { x: 60, y: 45, width: 20, height: 10 }, // Command console
-      { x: 55, y: 60, width: 10, height: 15 }, // Support beam
-      { x: 75, y: 60, width: 10, height: 15 }, // Support beam
+      { id: 'obs1', type: 'decoration', x: 55, y: 25, width: 10, height: 10 }, // 篝火
+      { id: 'obs2', type: 'wall', x: 0, y: 45, width: 40, height: 10 }, // 小溪
+      { id: 'obs3', type: 'wall', x: 70, y: 45, width: 50, height: 10 } // 小溪
+    ],
+    sabotagePoints: [
+      { id: 'sab1', name: '营地入口', x: 55, y: 5, sabotageType: 'lock_door' },
+      { id: 'sab2', name: '篝火', x: 55, y: 25, sabotageType: 'lights' },
+      { id: 'sab3', name: '信号塔', x: 100, y: 10, sabotageType: 'comms' }
     ]
   },
-  
-  'map5': {
+
+  map5: {
     id: 'map5',
-    name: '🎪 游乐园',
-    description: '欢乐地图 - 开阔场地，多隐藏点',
-    size: { width: 160, height: 120 },
+    name: '太空站',
+    description: '高科技太空设施，科幻主题',
+    theme: MapTheme.SPACE,
+    size: { width: 100, height: 100 },
+    backgroundColor: '#9C27B0',
+    gridColor: '#424242',
+    recommendedPlayers: { min: 6, max: 10 },
+    difficulty: 3,
+    meetingPoint: { x: 50, y: 40 },
     zones: [
-      { id: 'entrance', name: '入口广场', type: 'common', position: { x: 80, y: 100 }, size: { width: 30, height: 20 } },
-      { id: 'roller_coaster', name: '过山车', type: 'task', position: { x: 40, y: 40 }, size: { width: 30, height: 30 } },
-      { id: 'carousel', name: '旋转木马', type: 'task', position: { x: 120, y: 40 }, size: { width: 25, height: 25 } },
-      { id: 'food_court', name: '美食街', type: 'task', position: { x: 40, y: 80 }, size: { width: 25, height: 20 } },
-      { id: 'arcade', name: '游戏厅', type: 'task', position: { x: 120, y: 80 }, size: { width: 25, height: 20 } },
-      { id: 'haunted_house', name: '鬼屋', type: 'task', position: { x: 80, y: 30 }, size: { width: 20, height: 20 } },
-      { id: 'ferris_wheel', name: '摩天轮', type: 'task', position: { x: 80, y: 60 }, size: { width: 20, height: 20 } },
-      { id: 'stage', name: '表演舞台', type: 'meeting', position: { x: 80, y: 100 }, size: { width: 20, height: 15 } },
-      { id: 'spawn_1', name: '北门', type: 'spawn', position: { x: 80, y: 10 }, size: { width: 5, height: 5 } },
-      { id: 'spawn_2', name: '东门', type: 'spawn', position: { x: 150, y: 60 }, size: { width: 5, height: 5 } },
-      { id: 'spawn_3', name: '西门', type: 'spawn', position: { x: 10, y: 60 }, size: { width: 5, height: 5 } },
+      { id: 'zone1', name: '驾驶舱', x: 15, y: 15, width: 20, height: 15, taskCount: 2 },
+      { id: 'zone2', name: '通讯室', x: 85, y: 15, width: 15, height: 15, taskCount: 1 },
+      { id: 'zone3', name: '引擎室 A', x: 15, y: 40, width: 20, height: 15, taskCount: 2 },
+      { id: 'zone4', name: '中央核心', x: 50, y: 35, width: 30, height: 15, taskCount: 0 },
+      { id: 'zone5', name: '引擎室 B', x: 85, y: 40, width: 15, height: 15, taskCount: 2 },
+      { id: 'zone6', name: '生命维持', x: 15, y: 65, width: 20, height: 15, taskCount: 1 },
+      { id: 'zone7', name: '实验室', x: 85, y: 65, width: 15, height: 15, taskCount: 2 },
+      { id: 'zone8', name: '货舱 A', x: 15, y: 90, width: 15, height: 10, taskCount: 1 },
+      { id: 'zone9', name: '气闸', x: 50, y: 90, width: 20, height: 10, taskCount: 1 },
+      { id: 'zone10', name: '货舱 B', x: 85, y: 90, width: 15, height: 10, taskCount: 1 }
     ],
-    taskLocations: [
-      { taskId: 'check_coaster', zoneId: 'roller_coaster', position: { x: 45, y: 45 } },
-      { taskId: 'clean_horses', zoneId: 'carousel', position: { x: 125, y: 45 } },
-      { taskId: 'prepare_food', zoneId: 'food_court', position: { x: 45, y: 85 } },
-      { taskId: 'fix_machines', zoneId: 'arcade', position: { x: 125, y: 85 } },
-      { taskId: 'clean_ghosts', zoneId: 'haunted_house', position: { x: 85, y: 35 } },
-      { taskId: 'inspect_wheel', zoneId: 'ferris_wheel', position: { x: 85, y: 65 } },
-      { taskId: 'decorate_park', zoneId: 'entrance', position: { x: 85, y: 105 } },
-      { taskId: 'test_games', zoneId: 'arcade', position: { x: 135, y: 90 } },
-    ],
-    vents: [
-      { id: 'vent_1', position: { x: 60, y: 50 }, connections: ['vent_2'] },
-      { id: 'vent_2', position: { x: 100, y: 50 }, connections: ['vent_1', 'vent_3'] },
-      { id: 'vent_3', position: { x: 80, y: 70 }, connections: ['vent_2', 'vent_4'] },
-      { id: 'vent_4', position: { x: 60, y: 90 }, connections: ['vent_3'] },
-    ],
-    spawnPoints: [
-      { x: 80, y: 10 },
-      { x: 150, y: 60 },
-      { x: 10, y: 60 },
-      { x: 40, y: 40 },
-      { x: 120, y: 40 },
-      { x: 80, y: 30 },
-    ],
-    meetingPoint: { x: 80, y: 100 },
+    tasks: [],
     obstacles: [
-      { x: 35, y: 35, width: 10, height: 10 }, // Coaster support
-      { x: 115, y: 35, width: 10, height: 10 }, // Carousel center
-      { x: 75, y: 25, width: 10, height: 10 }, // Haunted house entrance
-      { x: 75, y: 55, width: 10, height: 10 }, // Ferris wheel base
+      { id: 'obs1', type: 'wall', x: 40, y: 30, width: 20, height: 5 },
+      { id: 'obs2', type: 'wall', x: 40, y: 60, width: 20, height: 5 }
+    ],
+    sabotagePoints: [
+      { id: 'sab1', name: '气闸门', x: 50, y: 90, sabotageType: 'lock_door' },
+      { id: 'sab2', name: '主电源', x: 50, y: 50, sabotageType: 'lights' },
+      { id: 'sab3', name: '通讯阵列', x: 85, y: 20, sabotageType: 'comms' }
     ]
   }
 };
 
-// Helper function to get map by ID
+// 任务模板库
+export const TASK_TEMPLATES: Record<TaskType, Array<{ name: string; description: string; duration: number }>> = {
+  [TaskType.SHORT]: [
+    { name: '喂食', description: '给所有宠物喂食', duration: 5 },
+    { name: '梳理毛发', description: '梳理宠物毛发', duration: 6 },
+    { name: '更换水碗', description: '更换干净的水', duration: 5 },
+    { name: '整理玩具', description: '整理散落的玩具', duration: 7 },
+    { name: '记录数据', description: '记录宠物行为数据', duration: 8 },
+    { name: '准备零食', description: '准备训练零食', duration: 6 },
+    { name: '检查设备', description: '检查设备状态', duration: 7 },
+    { name: '清洁地面', description: '清扫地面', duration: 8 }
+  ],
+  [TaskType.LONG]: [
+    { name: '清理猫砂盆', description: '清理所有猫砂盆', duration: 15 },
+    { name: '健康检查', description: '全面健康检查', duration: 20 },
+    { name: '打扫房间', description: '深度清洁房间', duration: 18 },
+    { name: '消毒用品', description: '消毒所有用品', duration: 15 },
+    { name: '维修设备', description: '维修故障设备', duration: 20 },
+    { name: '准备手术', description: '准备手术器械', duration: 25 },
+    { name: '填写病历', description: '填写完整病历', duration: 15 }
+  ],
+  [TaskType.COMMON]: [
+    { name: '搬运重物', description: '需要 2 人协作搬运', duration: 10 },
+    { name: '启动装置', description: '需要 3 人同时操作', duration: 15 },
+    { name: '开启大门', description: '需要 2 人同时按下按钮', duration: 8 }
+  ]
+};
+
+// 获取地图配置
 export function getMap(mapId: string): GameMap | null {
   return MAPS[mapId] || null;
 }
 
-// Helper function to get all available maps
-export function getAvailableMaps(): Array<{ id: string; name: string; description: string }> {
+// 获取所有地图列表
+export function getAllMaps(): Array<{ id: string; name: string; description: string; difficulty: number; recommendedPlayers: { min: number; max: number } }> {
   return Object.values(MAPS).map(map => ({
     id: map.id,
     name: map.name,
-    description: map.description
+    description: map.description,
+    difficulty: map.difficulty,
+    recommendedPlayers: map.recommendedPlayers
   }));
+}
+
+// 根据玩家数推荐地图
+export function recommendMap(playerCount: number): string {
+  if (playerCount <= 5) return 'map1'; // 宠物乐园
+  if (playerCount <= 7) return 'map2'; // 喵喵别墅或森林营地
+  return 'map3'; // 动物医院或太空站
+}
+
+// 生成地图任务
+export function generateMapTasks(mapId: string, taskCount: number): TaskLocation[] {
+  const map = MAPS[mapId];
+  if (!map) return [];
+
+  const tasks: TaskLocation[] = [];
+  const zonesWithTasks = map.zones.filter(z => z.taskCount > 0);
+
+  let taskId = 0;
+  while (tasks.length < taskCount && taskId < 1000) {
+    // 随机选择一个区域
+    const zone = zonesWithTasks[Math.floor(Math.random() * zonesWithTasks.length)];
+    
+    // 随机选择任务类型
+    const taskType = Math.random() < 0.7 ? TaskType.SHORT : TaskType.LONG;
+    const templates = TASK_TEMPLATES[taskType];
+    const template = templates[Math.floor(Math.random() * templates.length)];
+
+    // 生成任务位置 (在区域内随机)
+    const taskX = zone.x + Math.random() * (zone.width - 10);
+    const taskY = zone.y + Math.random() * (zone.height - 10);
+
+    tasks.push({
+      id: `task-${taskId}`,
+      zoneId: zone.id,
+      x: taskX,
+      y: taskY,
+      name: template.name,
+      description: template.description,
+      type: taskType,
+      duration: template.duration
+    });
+
+    taskId++;
+  }
+
+  return tasks;
 }

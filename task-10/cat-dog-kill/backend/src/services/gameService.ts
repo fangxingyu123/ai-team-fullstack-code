@@ -1,6 +1,7 @@
 import { RedisClientType } from 'redis';
 import { v4 as uuidv4 } from 'uuid';
 import { GameState, Player, Role, GamePhase, Task, GameSettings, Sabotage, Vote, ROLE_CONFIGS } from '../types/game';
+import { generateMapTasks, getMap, MAPS } from '../types/maps';
 
 const DEFAULT_SETTINGS: GameSettings = {
   mapId: 'map1',
@@ -18,9 +19,31 @@ export class GameService {
   private redis: RedisClientType;
   private games: Map<string, GameState> = new Map();
   private playerToGame: Map<string, string> = new Map(); // socketId -> gameId
+  private gameToVoiceRoom: Map<string, string> = new Map(); // gameId -> voiceRoomId
 
   constructor(redis: RedisClientType) {
     this.redis = redis;
+  }
+
+  /**
+   * 获取游戏关联的语音房间 ID
+   */
+  getVoiceRoomId(gameId: string): string | undefined {
+    return this.gameToVoiceRoom.get(gameId);
+  }
+
+  /**
+   * 设置游戏关联的语音房间 ID
+   */
+  setVoiceRoomId(gameId: string, voiceRoomId: string): void {
+    this.gameToVoiceRoom.set(gameId, voiceRoomId);
+  }
+
+  /**
+   * 清理游戏的语音房间关联
+   */
+  clearVoiceRoomId(gameId: string): void {
+    this.gameToVoiceRoom.delete(gameId);
   }
 
   // Generate a 6-character room code
@@ -173,6 +196,27 @@ export class GameService {
     return game;
   }
 
+  /**
+   * 获取游戏的语音房间 ID（如果存在）
+   */
+  getGameVoiceRoomId(gameId: string): string | undefined {
+    return this.gameToVoiceRoom.get(gameId);
+  }
+
+  /**
+   * 设置游戏的语音房间 ID
+   */
+  setGameVoiceRoomId(gameId: string, voiceRoomId: string): void {
+    this.gameToVoiceRoom.set(gameId, voiceRoomId);
+  }
+
+  /**
+   * 清理游戏的语音房间关联
+   */
+  cleanupGameVoiceRoom(gameId: string): void {
+    this.gameToVoiceRoom.delete(gameId);
+  }
+
   // Assign roles to players
   private assignRoles(game: GameState): void {
     const players = Array.from(game.players.values());
@@ -219,34 +263,19 @@ export class GameService {
 
   // Generate tasks for the map
   private generateTasks(game: GameState): void {
-    const taskTemplates = [
-      { name: '喂食', description: '给所有宠物喂食', type: 'short' as const },
-      { name: '清理猫砂盆', description: '清理所有猫砂盆', type: 'long' as const },
-      { name: '梳理毛发', description: '梳理宠物毛发', type: 'short' as const },
-      { name: '检查健康', description: '检查宠物健康状况', type: 'short' as const },
-      { name: '整理玩具', description: '整理散落的玩具', type: 'short' as const },
-      { name: '更换水碗', description: '更换干净的水', type: 'short' as const },
-      { name: '打扫房间', description: '打扫游戏区域', type: 'long' as const },
-      { name: '记录数据', description: '记录宠物行为', type: 'short' as const },
-      { name: '准备零食', description: '准备训练零食', type: 'short' as const },
-      { name: '消毒用品', description: '消毒游戏用品', type: 'short' as const }
-    ];
-
-    for (let i = 0; i < game.settings.taskCount; i++) {
-      const template = taskTemplates[i % taskTemplates.length];
-      game.tasks.push({
-        id: `task-${i}`,
-        name: template.name,
-        description: template.description,
-        type: template.type,
-        location: {
-          x: Math.random() * 100,
-          y: Math.random() * 100
-        },
-        isCompleted: false,
-        completedBy: []
-      });
-    }
+    // Use the new map-based task generation
+    const mapTasks = generateMapTasks(game.settings.mapId, game.settings.taskCount);
+    
+    // Convert map tasks to game tasks
+    game.tasks = mapTasks.map(mapTask => ({
+      id: mapTask.id,
+      name: mapTask.name,
+      description: mapTask.description,
+      type: mapTask.type,
+      location: { x: mapTask.x, y: mapTask.y },
+      isCompleted: false,
+      completedBy: []
+    }));
   }
 
   // Move player

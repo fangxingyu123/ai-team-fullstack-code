@@ -1,6 +1,8 @@
 import { Server, Socket } from 'socket.io';
 import { GameService } from '../services/gameService';
+import { VoiceService } from '../services/voiceService';
 import { GamePhase, Role, SabotageType, ROLE_CONFIGS } from '../types/game';
+import { v4 as uuidv4 } from 'uuid';
 
 interface JoinRoomData {
   roomCode: string;
@@ -43,7 +45,7 @@ interface HunterEliminateData {
   targetId: string;
 }
 
-export function initializeSocket(io: Server, gameService: GameService): void {
+export function initializeSocket(io: Server, gameService: GameService, voiceService?: VoiceService): void {
   io.on('connection', (socket: Socket) => {
     console.log(`🔌 Player connected: ${socket.id}`);
 
@@ -138,6 +140,15 @@ export function initializeSocket(io: Server, gameService: GameService): void {
         return;
       }
 
+      // Create voice room if voice service is available
+      let voiceRoomId: string | undefined;
+      if (voiceService) {
+        const voiceRoom = voiceService.createVoiceRoom(updatedGame.id, updatedGame.code);
+        voiceRoomId = voiceRoom.id;
+        gameService.setGameVoiceRoomId(updatedGame.id, voiceRoom.id);
+        console.log(`🎙️ Voice room created: ${voiceRoom.id} for game ${updatedGame.id}`);
+      }
+
       // Send role to each player privately
       for (const p of updatedGame.players.values()) {
         const playerSocket = io.sockets.sockets.get(p.socketId);
@@ -148,7 +159,8 @@ export function initializeSocket(io: Server, gameService: GameService): void {
               id: pl.id,
               username: pl.username,
               isAlive: pl.isAlive
-            }))
+            })),
+            voiceRoomId // 发送语音房间 ID
           });
         }
       }
@@ -359,9 +371,22 @@ export function initializeSocket(io: Server, gameService: GameService): void {
     // Disconnect
     socket.on('disconnect', async () => {
       console.log(`🔌 Player disconnected: ${socket.id}`);
-      await gameService.leaveRoom(socket.id);
       
       const game = gameService.getPlayerGame(socket.id);
+      const gameId = game?.id;
+      
+      await gameService.leaveRoom(socket.id);
+      
+      // Clean up voice room association if game no longer exists
+      if (gameId && gameService.getGameVoiceRoomId(gameId)) {
+        const remainingGame = Array.from((gameService as any).games.values())
+          .find((g: any) => g.id === gameId);
+        if (!remainingGame) {
+          gameService.cleanupGameVoiceRoom(gameId);
+          console.log(`🎙️ Cleaned up voice room for ended game ${gameId}`);
+        }
+      }
+      
       if (game) {
         socket.to(game.id).emit('player_left', { playerId: socket.id });
       }

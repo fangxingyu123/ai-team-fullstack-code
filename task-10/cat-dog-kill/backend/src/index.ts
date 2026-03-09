@@ -9,7 +9,9 @@ import { createClient } from 'redis';
 import authRoutes from './routes/auth';
 import gameRoutes from './routes/game';
 import { initializeSocket } from './sockets/gameSocket';
+import { initializeVoiceSocket } from './sockets/voiceSocket';
 import { GameService } from './services/gameService';
+import { VoiceService } from './services/voiceService';
 
 dotenv.config();
 
@@ -47,8 +49,12 @@ redisClient.on('error', (err) => console.error('Redis Client Error', err));
 // Initialize Game Service
 const gameService = new GameService(redisClient);
 
+// Initialize Voice Service
+const voiceService = new VoiceService();
+
 // Initialize Socket.IO
-initializeSocket(io, gameService);
+initializeSocket(io, gameService, voiceService);
+initializeVoiceSocket(io, voiceService);
 
 // Connect to MongoDB and start server
 async function startServer() {
