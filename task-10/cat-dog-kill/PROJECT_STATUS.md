@@ -113,7 +113,7 @@
 
 ### 功能扩展
 - [ ] 好友系统
-- [ ] 排行榜
+- [x] 排行榜 ✅
 - [ ] 音效与动画
 - [ ] 更多地图（3-5 张）
 
@@ -145,7 +145,8 @@ cat-dog-kill/
 │       │   ├── 📄 auth.ts            ✅
 │       │   └── 📄 game.ts            ✅
 │       ├── 📁 services/
-│       │   └── 📄 gameService.ts     ✅
+│       │   ├── 📄 gameService.ts     ✅
+│       │   └── 📄 leaderboardService.ts ✅ 新增
 │       ├── 📁 sockets/
 │       │   └── 📄 gameSocket.ts      ✅
 │       ├── 📁 middleware/
@@ -161,11 +162,16 @@ cat-dog-kill/
 │   │   └── 📄 GameStateManager.swift ✅
 │   ├── 📁 Network/
 │   │   ├── 📄 SocketManager.swift    ✅
-│   │   └── 📄 AuthManager.swift      ✅
+│   │   ├── 📄 AuthManager.swift      ✅
+│   │   └── 📄 LeaderboardManager.swift ✅ 新增
+│   ├── 📁 Models/
+│   │   ├── 📄 GameStateManager.swift ✅
+│   │   └── 📄 LeaderboardViewModel.swift ✅ 新增
 │   ├── 📁 Views/
 │   │   ├── 📄 ContentView.swift      ✅
 │   │   ├── 📄 GameView.swift         ✅
-│   │   └── 📄 AuthView.swift         ✅
+│   │   ├── 📄 AuthView.swift         ✅
+│   │   └── 📄 LeaderboardView.swift  ✅ 新增
 │   └── 📁 Utils/
 │       └── 📄 Assets.swift           ✅
 └── 📁 docs/                          ✅ 100%
@@ -206,8 +212,8 @@ cat-dog-kill/
 ## 🎯 下周目标 (3/9-3/15) - Phase 2
 
 - [ ] 好友系统 API 设计
-- [ ] 排行榜功能实现
-- [ ] 新角色设计 (狐狸、侦探)
+- [x] 排行榜功能实现 ✅
+- [x] 新角色设计 (狐狸、侦探) ✅
 - [ ] 第 2 张地图设计
 - [ ] 音效系统集成调研
 

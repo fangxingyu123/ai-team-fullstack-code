@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { getAllMaps, getMap, recommendMap } from '../types/maps';
+import { leaderboardService } from '../services/leaderboardService';
 
 const router = express.Router();
 
@@ -37,18 +38,31 @@ router.get('/rooms/:code', async (req: Request, res: Response) => {
 // Get leaderboards
 router.get('/leaderboard', async (req: Request, res: Response) => {
   try {
-    // This would query MongoDB for top players
-    res.json({
-      leaderboard: [
-        { rank: 1, username: 'ProPlayer', wins: 150, winRate: 0.75 },
-        { rank: 2, username: 'GameMaster', wins: 120, winRate: 0.70 },
-        { rank: 3, username: 'CatLover', wins: 100, winRate: 0.65 },
-        { rank: 4, username: 'Doggo', wins: 95, winRate: 0.62 },
-        { rank: 5, username: 'FoxHunter', wins: 90, winRate: 0.60 }
-      ]
-    });
+    const limit = parseInt(req.query.limit as string, 10) || 100;
+    const leaderboard = await leaderboardService.getLeaderboard(limit);
+    res.json({ leaderboard });
   } catch (error: any) {
     console.error('Leaderboard error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get player's own rank
+router.get('/leaderboard/rank', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' });
+    }
+    
+    const rankInfo = await leaderboardService.getPlayerRank(userId as string);
+    if (!rankInfo) {
+      return res.status(404).json({ message: 'Player not found' });
+    }
+    
+    res.json(rankInfo);
+  } catch (error: any) {
+    console.error('Get player rank error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

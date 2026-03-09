@@ -228,7 +228,7 @@ hunter_elimination: { hunterId, targetId }
 - [ ] 更多地图（3-5 张）
 - [ ] 语音聊天
 - [ ] 好友系统
-- [ ] 排行榜
+- [x] 排行榜 ✅
 - [ ] 成就系统
 
 ### 第三阶段 📋

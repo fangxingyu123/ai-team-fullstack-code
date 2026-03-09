@@ -372,8 +372,11 @@ GET /api/game/rooms/:code
 
 **请求**:
 ```http
-GET /api/game/leaderboard
+GET /api/game/leaderboard?limit=100
 ```
+
+**参数**:
+- `limit` (可选): 返回数量限制，默认 100
 
 **响应 (200)**:
 ```json
@@ -381,17 +384,52 @@ GET /api/game/leaderboard
   "leaderboard": [
     {
       "rank": 1,
+      "userId": "65e8a1b2c3d4e5f6g7h8i9j0",
       "username": "ProPlayer",
       "wins": 150,
-      "winRate": 0.75
+      "losses": 50,
+      "gamesPlayed": 200,
+      "winRate": 0.75,
+      "level": 10
     },
     {
       "rank": 2,
+      "userId": "65e8a1b2c3d4e5f6g7h8i9j1",
       "username": "GameMaster",
       "wins": 120,
-      "winRate": 0.70
+      "losses": 60,
+      "gamesPlayed": 180,
+      "winRate": 0.67,
+      "level": 9
     }
   ]
+}
+```
+
+---
+
+### 8. 获取玩家排名
+
+**请求**:
+```http
+GET /api/game/leaderboard/rank?userId=65e8a1b2c3d4e5f6g7h8i9j0
+```
+
+**参数**:
+- `userId` (必填): 用户 ID
+
+**响应 (200)**:
+```json
+{
+  "rank": 5,
+  "total": 1000
+}
+```
+
+**错误响应 (404)**:
+```json
+{
+  "message": "Player not found"
 }
 ```
 

@@ -341,6 +341,12 @@ struct ProfileView: View {
                     }
                 }
                 
+                Section(header: Text("排行")) {
+                    NavigationLink("排行榜") {
+                        LeaderboardView()
+                    }
+                }
+                
                 Section(header: Text("设置")) {
                     NavigationLink("音效设置") { EmptyView() }
                     NavigationLink("通知设置") { EmptyView() }
