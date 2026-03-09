@@ -11,6 +11,7 @@ import gameRoutes from './routes/game';
 import friendRoutes from './routes/friends';
 import { initializeSocket } from './sockets/gameSocket';
 import { initializeVoiceSocket } from './sockets/voiceSocket';
+import { initializeFriendSocket } from './sockets/friendSocket';
 import { GameService } from './services/gameService';
 import { VoiceService } from './services/voiceService';
 
@@ -35,6 +36,9 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/game', gameRoutes);
 app.use('/api/friends', friendRoutes);
+
+// Initialize Friend Socket
+initializeFriendSocket(io);
 
 // Health check
 app.get('/health', (req, res) => {

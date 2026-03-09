@@ -132,9 +132,193 @@ Content-Type: application/json
 
 ---
 
+## 好友接口
+
+### 5. 获取好友列表
+
+**请求**:
+```http
+GET /api/friends/list
+Authorization: Bearer <token>
+```
+
+**响应 (200)**:
+```json
+{
+  "friends": [
+    {
+      "id": "65e8a1b2c3d4e5f6g7h8i9j0",
+      "username": "player1",
+      "avatar": "",
+      "level": 5,
+      "wins": 12,
+      "losses": 8,
+      "gamesPlayed": 20,
+      "winRate": "0.60",
+      "isOnline": true,
+      "createdAt": "2026-03-06T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### 6. 获取好友请求列表
+
+**请求**:
+```http
+GET /api/friends/requests
+Authorization: Bearer <token>
+```
+
+**响应 (200)**:
+```json
+{
+  "requests": [
+    {
+      "id": "req123",
+      "from": {
+        "id": "65e8a1b2c3d4e5f6g7h8i9j0",
+        "username": "player1",
+        "avatar": "",
+        "level": 5
+      },
+      "createdAt": "2026-03-09T08:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### 7. 发送好友请求
+
+**请求**:
+```http
+POST /api/friends/request
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "targetUsername": "player2"
+}
+```
+
+**响应 (200)**:
+```json
+{
+  "message": "Friend request sent",
+  "request": {
+    "to": {
+      "id": "65e8a1b2c3d4e5f6g7h8i9j1",
+      "username": "player2"
+    }
+  }
+}
+```
+
+---
+
+### 8. 接受好友请求
+
+**请求**:
+```http
+POST /api/friends/accept/:requestId
+Authorization: Bearer <token>
+```
+
+**响应 (200)**:
+```json
+{
+  "message": "Friend request accepted",
+  "friend": {
+    "id": "65e8a1b2c3d4e5f6g7h8i9j0",
+    "username": "player1"
+  }
+}
+```
+
+---
+
+### 9. 拒绝好友请求
+
+**请求**:
+```http
+POST /api/friends/reject/:requestId
+Authorization: Bearer <token>
+```
+
+**响应 (200)**:
+```json
+{
+  "message": "Friend request rejected"
+}
+```
+
+---
+
+### 10. 移除好友
+
+**请求**:
+```http
+DELETE /api/friends/remove/:friendId
+Authorization: Bearer <token>
+```
+
+**响应 (200)**:
+```json
+{
+  "message": "Friend removed"
+}
+```
+
+---
+
+### 11. 拉黑用户
+
+**请求**:
+```http
+POST /api/friends/block/:userId
+Authorization: Bearer <token>
+```
+
+**响应 (200)**:
+```json
+{
+  "message": "User blocked"
+}
+```
+
+---
+
+### 12. 搜索用户
+
+**请求**:
+```http
+GET /api/friends/search?query=player
+Authorization: Bearer <token>
+```
+
+**响应 (200)**:
+```json
+{
+  "users": [
+    {
+      "id": "65e8a1b2c3d4e5f6g7h8i9j0",
+      "username": "player1",
+      "avatar": "",
+      "level": 5
+    }
+  ]
+}
+```
+
+---
+
 ## 游戏接口
 
-### 5. 获取房间列表
+### 13. 获取房间列表
 
 **请求**:
 ```http
@@ -391,6 +575,125 @@ socket.on('error', (data) => {
 ```javascript
 socket.on('chat_message', (data) => {
   console.log(`${data.username}: ${data.message}`);
+});
+```
+
+---
+
+### 好友系统 Socket 事件
+
+#### 客户端 → 服务器事件
+
+**登录上线**
+```javascript
+socket.emit('friend_login', {
+  userId: 'user123',
+  friendIds: ['friend1', 'friend2']
+});
+```
+
+**发送好友请求通知**
+```javascript
+socket.emit('send_friend_request', {
+  fromUserId: 'user123',
+  fromUsername: 'player1',
+  toUserId: 'user456'
+});
+```
+
+**好友请求被接受通知**
+```javascript
+socket.emit('friend_request_accepted', {
+  fromUserId: 'user123',
+  toUserId: 'user456',
+  toUsername: 'player2'
+});
+```
+
+**移除好友通知**
+```javascript
+socket.emit('friend_removed', {
+  userId: 'user123',
+  friendId: 'user456'
+});
+```
+
+**邀请好友加入房间**
+```javascript
+socket.emit('invite_friend', {
+  fromUserId: 'user123',
+  fromUsername: 'player1',
+  toUserId: 'user456',
+  roomCode: 'ABC123'
+});
+```
+
+**接受房间邀请**
+```javascript
+socket.emit('accept_invite', {
+  toUserId: 'user456',
+  fromUserId: 'user123',
+  roomCode: 'ABC123'
+});
+```
+
+---
+
+#### 服务器 → 客户端事件
+
+**好友上线**
+```javascript
+socket.on('friend_online', (data) => {
+  console.log('Friend online:', data.userId);
+});
+```
+
+**好友下线**
+```javascript
+socket.on('friend_offline', (data) => {
+  console.log('Friend offline:', data.userId);
+});
+```
+
+**好友在线列表**
+```javascript
+socket.on('friends_online', (data) => {
+  console.log('Online friends:', data.onlineFriends);
+});
+```
+
+**收到好友请求**
+```javascript
+socket.on('friend_request_received', (data) => {
+  console.log(`Friend request from ${data.fromUsername}`);
+});
+```
+
+**好友请求被接受**
+```javascript
+socket.on('friend_request_accepted', (data) => {
+  console.log(`${data.friendUsername} accepted your request`);
+});
+```
+
+**被移除好友**
+```javascript
+socket.on('friend_removed', (data) => {
+  console.log(`Removed by ${data.byUserId}`);
+});
+```
+
+**收到房间邀请**
+```javascript
+socket.on('friend_invited', (data) => {
+  console.log(`${data.fromUsername} invited you to room ${data.roomCode}`);
+});
+```
+
+**邀请被接受**
+```javascript
+socket.on('invite_accepted', (data) => {
+  console.log(`${data.friendId} joined your room ${data.roomCode}`);
 });
 ```
 
