@@ -1,8 +1,8 @@
 # 📊 项目状态 - 猫狗杀
 
 **最后更新**: 2026-03-09  
-**当前阶段**: 第二阶段 - 角色扩展完成 (Phase 2: Roles Complete)  
-**整体进度**: 100% MVP ✅ | 20% Phase 2 ✅
+**当前阶段**: 第二阶段 - 成就系统完成 (Phase 2: Achievements Complete)  
+**整体进度**: 100% MVP ✅ | 60% Phase 2 ✅
 
 ---
 
@@ -37,15 +37,19 @@
 | 服务器入口 | src/index.ts | ✅ |
 | 类型定义 | src/types/game.ts | ✅ |
 | 用户模型 | src/models/User.ts | ✅ |
+| 成就模型 | src/models/Achievement.ts | ✅ 新增 |
 | 游戏服务 | src/services/gameService.ts | ✅ |
+| 成就服务 | src/services/achievementService.ts | ✅ 新增 |
+| 排行榜服务 | src/services/leaderboardService.ts | ✅ |
 | Socket 处理 | src/sockets/gameSocket.ts | ✅ |
 | 认证路由 | src/routes/auth.ts | ✅ |
 | 游戏路由 | src/routes/game.ts | ✅ |
+| 成就路由 | src/routes/achievements.ts | ✅ 新增 |
 | 认证中间件 | src/middleware/auth.ts | ✅ |
 | 日志工具 | src/utils/logger.ts | ✅ |
 | Docker 配置 | Dockerfile, docker-compose.yml | ✅ |
 
-### 前端 (iOS) - 75%
+### 前端 (iOS) - 85%
 
 | 模块 | 文件 | 状态 |
 |------|------|------|
@@ -54,9 +58,11 @@
 | 状态管理 | Models/GameStateManager.swift | ✅ |
 | 网络层 | Network/SocketManager.swift | ✅ |
 | 认证管理 | Network/AuthManager.swift | ✅ |
+| 成就管理 | Network/AchievementManager.swift | ✅ 新增 |
 | 主界面 | Views/ContentView.swift | ✅ |
 | 游戏界面 | Views/GameView.swift | ✅ |
 | 登录注册 | Views/AuthView.swift | ✅ |
+| 成就界面 | Views/AchievementsView.swift | ✅ 新增 |
 | 资源文件 | Utils/Assets.swift | ✅ |
 
 ### 文档 (Documentation) - 100%
@@ -69,7 +75,8 @@
 | API 文档 | docs/API.md | ✅ |
 | 设置指南 | docs/SETUP.md | ✅ |
 | 后端文档 | backend/README.md | ✅ |
-| **角色系统** | **docs/ROLES.md** | **✅ 新增** |
+| **角色系统** | **docs/ROLES.md** | **✅** |
+| **成就系统** | **docs/ACHIEVEMENTS.md** | **✅ 新增** |
 
 ---
 

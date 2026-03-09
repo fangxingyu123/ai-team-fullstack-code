@@ -48,11 +48,23 @@ struct MainNavigationView: View {
                 }
                 .tag(1)
             
+            LeaderboardView()
+                .tabItem {
+                    Label("排行", systemImage: "trophy")
+                }
+                .tag(2)
+            
+            AchievementsView()
+                .tabItem {
+                    Label("成就", systemImage: "star")
+                }
+                .tag(3)
+            
             ProfileView()
                 .tabItem {
                     Label("我的", systemImage: "person")
                 }
-                .tag(2)
+                .tag(4)
         }
     }
 }
@@ -296,6 +308,7 @@ struct RoomRowView: View {
 
 struct ProfileView: View {
     @EnvironmentObject var authManager: AuthManager
+    @StateObject private var achievementManager = AchievementManager.shared
     
     var body: some View {
         NavigationView {
@@ -322,6 +335,29 @@ struct ProfileView: View {
                         .padding(.vertical, 8)
                     }
                     
+                    // 成就概览
+                    Section(header: Text("成就")) {
+                        if let userAchievements = achievementManager.userAchievements {
+                            HStack {
+                                StatBox(label: "成就点数", value: "\(userAchievements.totalPoints)", icon: "⭐")
+                                StatBox(label: "解锁成就", value: "\(userAchievements.unlockedCount)", icon: "🏆")
+                                StatBox(label: "完成率", value: "\(userAchievements.completionRate)%", icon: "📊")
+                            }
+                            .padding(.vertical, 8)
+                        } else {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                Spacer()
+                            }
+                            .onAppear {
+                                Task {
+                                    await achievementManager.fetchUserAchievements()
+                                }
+                            }
+                        }
+                    }
+                    
                     Section(header: Text("统计")) {
                         StatRow(label: "游戏场次", value: "\(user.gamesPlayed)")
                         StatRow(label: "胜利", value: "\(user.wins)")
@@ -341,12 +377,6 @@ struct ProfileView: View {
                     }
                 }
                 
-                Section(header: Text("排行")) {
-                    NavigationLink("排行榜") {
-                        LeaderboardView()
-                    }
-                }
-                
                 Section(header: Text("设置")) {
                     NavigationLink("音效设置") { EmptyView() }
                     NavigationLink("通知设置") { EmptyView() }
@@ -354,7 +384,32 @@ struct ProfileView: View {
                 }
             }
             .navigationTitle("我的")
+            .onAppear {
+                Task {
+                    await achievementManager.fetchUserAchievements()
+                }
+            }
         }
+    }
+}
+
+struct StatBox: View {
+    let label: String
+    let value: String
+    let icon: String
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(icon)
+                .font(.title2)
+            Text(value)
+                .font(.title2)
+                .fontWeight(.bold)
+            Text(label)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 

@@ -17,6 +17,7 @@ struct User: Codable {
     let wins: Int
     let losses: Int
     let gamesPlayed: Int
+    let achievementPoints: Int?
 }
 
 struct AuthResponse: Codable {
@@ -142,6 +143,9 @@ class AuthManager: ObservableObject {
         authToken = nil
         isAuthenticated = false
         UserDefaults.standard.removeObject(forKey: storageKey)
+        
+        // 清除成就管理器的认证令牌
+        AchievementManager.shared.clearAuthToken()
     }
     
     func updateStats(won: Bool) async {
@@ -176,6 +180,9 @@ class AuthManager: ObservableObject {
         currentUser = response.user
         isAuthenticated = true
         saveToken(response.token)
+        
+        // 设置成就管理器的认证令牌
+        AchievementManager.shared.setAuthToken(response.token)
     }
     
     private func saveToken(_ token: String) {

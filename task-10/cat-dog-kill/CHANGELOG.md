@@ -1,5 +1,127 @@
 # 📋 项目开发日志
 
+## 2026-03-09 - 成就系统实现 ✅
+
+### 今日完成
+
+#### 成就系统 (Phase 2 - 第 18 项)
+
+**后端 (TypeScript)**
+
+- [x] **成就模型** (`backend/src/models/Achievement.ts`) - 新建
+  - 成就类别枚举 (Victory, Tasks, Social, Role, Streak, Collection, Special)
+  - 成就难度枚举 (Easy, Medium, Hard, Legendary)
+  - 条件类型枚举 (20 种不同的成就条件)
+  - 完整的 Mongoose Schema
+
+- [x] **用户模型扩展** (`backend/src/models/User.ts`) - 更新
+  - `achievementPoints` - 成就点数
+  - `achievements[]` - 成就进度数组
+  - `stats{}` - 详细统计数据 (15 个统计字段)
+
+- [x] **成就服务** (`backend/src/services/achievementService.ts`) - 新建
+  - `initializeDefaultAchievements()` - 初始化 22 个默认成就
+  - `getAllAchievements()` - 获取所有成就
+  - `getUserAchievements(userId)` - 获取用户成就进度
+  - `updateAchievementProgress()` - 更新成就进度
+  - `onGameEnd()` - 游戏结束时更新成就
+  - `updateStreak()` - 更新连胜/连败
+  - 自动解锁检测
+
+- [x] **成就路由** (`backend/src/routes/achievements.ts`) - 新建
+  - `GET /api/achievements` - 获取所有成就列表
+  - `GET /api/achievements/my` - 获取我的成就 (需认证)
+  - `GET /api/achievements/user/:userId` - 获取他人成就 (公开)
+  - 按类别分组响应
+
+- [x] **游戏服务扩展** (`backend/src/services/gameService.ts`) - 更新
+  - `updateAchievementsOnGameEnd()` - 游戏结束成就更新
+  - 集成到 `endGame()` 方法
+  - 追踪胜利/失败、角色、任务、投票等数据
+
+- [x] **服务器入口** (`backend/src/index.ts`) - 更新
+  - 添加成就路由
+  - 启动时初始化默认成就
+
+- [x] **数据库脚本** (`backend/src/scripts/`) - 新建
+  - `initAchievements.ts` - 初始化成就数据
+  - `migrateUsers.ts` - 迁移现有用户数据
+
+**前端 (iOS Swift)**
+
+- [x] **成就模型** (`Models/Achievement.swift`) - 新建
+  - `AchievementCategory` - 成就类别
+  - `AchievementDifficulty` - 成就难度
+  - `ConditionType` - 条件类型
+  - `Achievement` - 成就定义
+  - `AchievementProgress` - 成就进度
+  - `UserAchievements` - 用户成就数据
+
+- [x] **成就网络管理** (`Network/AchievementManager.swift`) - 新建
+  - `fetchAllAchievements()` - 获取所有成就
+  - `fetchUserAchievements()` - 获取用户成就
+  - `fetchUserAchievements(userId:)` - 获取他人成就
+  - 认证令牌管理
+  - 单例模式
+
+- [x] **成就界面** (`Views/AchievementsView.swift`) - 新建
+  - 成就概览卡片 (点数、完成率、解锁数)
+  - 进度条可视化
+  - 类别筛选芯片
+  - 成就列表行视图
+  - 难度颜色标识
+  - 解锁/未解锁状态
+  - 进度追踪
+  - 加载/错误状态处理
+
+- [x] **主界面集成** (`Views/ContentView.swift`) - 更新
+  - 添加成就 Tab (第 4 个 Tab)
+  - Tab 图标：⭐
+  - Profile 页面显示成就概览
+
+- [x] **认证管理扩展** (`Network/AuthManager.swift`) - 更新
+  - `User` 模型添加 `achievementPoints` 字段
+  - 登录时设置成就管理器 Token
+  - 登出时清除成就管理器 Token
+
+**文档**
+
+- [x] **成就系统文档** (`docs/ACHIEVEMENTS.md`) - 新建
+  - 成就类别说明
+  - 成就难度说明
+  - 完整成就列表 (22 个)
+  - API 接口文档
+  - 数据库结构
+  - 解锁逻辑
+  - 运营建议
+
+---
+
+### 成就系统亮点
+
+**22 个精心设计的成就**
+- 🏆 胜利类：4 个 (首胜、10 胜、50 胜、100 胜)
+- 🔥 连胜类：2 个 (3 连胜、5 连胜)
+- 📋 任务类：4 个 (任务完成、完美任务)
+- 💬 社交类：3 个 (会议、投票)
+- 🎭 角色类：7 个 (各角色专属)
+- ⭐ 特殊类：2 个 (速战速决、绝地翻盘)
+- 📦 收集类：1 个 (百场资深)
+
+**智能解锁系统**
+- 游戏结束自动检测成就条件
+- 连胜/连败自动追踪
+- 多条件同时更新优化
+
+**精美 UI 设计**
+- 成就概览卡片
+- 类别筛选
+- 进度可视化
+- 难度颜色区分
+- 隐藏成就支持
+
+---
+
 ## 2026-03-09 - 排行榜功能实现 ✅
 
 ### 今日完成
