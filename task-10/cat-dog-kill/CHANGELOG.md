@@ -1,5 +1,140 @@
 # 📋 项目开发日志
 
+## 2026-03-09 - 排行榜功能实现 ✅
+
+### 今日完成
+
+#### 排行榜系统 (Phase 2 - 第 17 项)
+
+**后端 (TypeScript)**
+
+- [x] **排行榜服务** (`backend/src/services/leaderboardService.ts`) - 新建
+  - `getLeaderboard(limit)` - 获取排行榜列表
+  - `getPlayerRank(userId)` - 获取玩家排名
+  - `getTopPlayers(topN)` - 获取前 N 名
+  - 按胜场数降序排序
+  - 胜率自动计算
+
+- [x] **游戏路由扩展** (`backend/src/routes/game.ts`) - 更新
+  - `GET /api/game/leaderboard` - 获取排行榜（支持 limit 参数）
+  - `GET /api/game/leaderboard/rank?userId=xxx` - 获取玩家排名
+  - 集成排行榜服务
+
+**前端 (iOS Swift)**
+
+- [x] **排行榜网络层** (`Network/LeaderboardManager.swift`) - 新建
+  - `getLeaderboard(limit:)` - 获取排行榜
+  - `getPlayerRank(userId:)` - 获取玩家排名
+  - 错误处理（LeaderboardError 枚举）
+  - Token 认证支持
+
+- [x] **排行榜视图模型** (`Models/LeaderboardViewModel.swift`) - 新建
+  - 数据加载状态管理
+  - 错误处理
+  - 刷新功能
+  - 排名颜色辅助方法
+
+- [x] **排行榜界面** (`Views/LeaderboardView.swift`) - 新建
+  - 排行榜列表展示
+  - 排名徽章（🥇🥈🥉）
+  - 玩家头像和信息
+  - 胜率颜色区分
+  - 下拉刷新
+  - 空状态处理
+
+- [x] **主界面集成** (`Views/ContentView.swift`) - 更新
+  - Profile 页面添加"排行榜"入口
+  - NavigationLink 导航
+
+**文档**
+
+- [x] **交付文档** (`DELIVERY_17_LEADERBOARD.md`) - 新建
+- [x] **项目状态更新** (`PROJECT_STATUS.md`) - 更新
+- [x] **README 更新** (`README.md`) - 更新
+- [x] **API 文档扩展** (`docs/API.md`) - 更新
+
+---
+
+### 排行榜功能详情
+
+#### API 接口
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| GET | `/api/game/leaderboard?limit=100` | 获取排行榜 |
+| GET | `/api/game/leaderboard/rank?userId=xxx` | 获取玩家排名 |
+
+#### 响应格式
+
+```json
+{
+  "leaderboard": [
+    {
+      "rank": 1,
+      "userId": "65e8a1b2c3d4e5f6g7h8i9j0",
+      "username": "ProPlayer",
+      "wins": 150,
+      "losses": 50,
+      "gamesPlayed": 200,
+      "winRate": 0.75,
+      "level": 10
+    }
+  ]
+}
+```
+
+#### UI 效果
+
+```
+┌─────────────────────────────────┐
+│  ← 排行榜                       │
+├─────────────────────────────────┤
+│  🥇 1. ProPlayer        Lv.10   │
+│      🏆 150  📊 75%      200 场  │
+│                                 │
+│  🥈 2. GameMaster       Lv.9    │
+│      🏆 120  📊 67%      180 场  │
+│                                 │
+│  🥉 3. CatLover         Lv.8    │
+│      🏆 100  📊 65%      150 场  │
+│                                 │
+│  4. Doggo               Lv.7    │
+│      🏆 95   📊 62%      140 场  │
+└─────────────────────────────────┘
+```
+
+---
+
+### 代码统计
+
+**新增/修改文件**:
+- `backend/src/services/leaderboardService.ts` - 新建 90 行
+- `backend/src/routes/game.ts` - +30 行
+- `ios/CatDogKill/Network/LeaderboardManager.swift` - 新建 150 行
+- `ios/CatDogKill/Models/LeaderboardViewModel.swift` - 新建 70 行
+- `ios/CatDogKill/Views/LeaderboardView.swift` - 新建 200 行
+- `ios/CatDogKill/Views/ContentView.swift` - +5 行
+- `docs/API.md` - +40 行
+- `DELIVERY_17_LEADERBOARD.md` - 新建
+
+**总计**: 约 585+ 行新增代码
+
+---
+
+### 下一步计划
+
+1. **测试排行榜功能**
+   - 后端 API 测试
+   - 前端 UI 测试
+   - 数据准确性验证
+
+2. **Phase 2 剩余功能**
+   - 更多地图（3-5 张）
+   - 好友系统
+   - 成就系统
+
+---
+
 ## 2026-03-09 - 角色系统扩展 ✅
 
 ### 今日完成
