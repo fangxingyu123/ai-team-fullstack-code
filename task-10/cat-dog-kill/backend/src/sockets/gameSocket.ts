@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import { GameService } from '../services/gameService';
-import { GamePhase, Role, SabotageType } from '../types/game';
+import { GamePhase, Role, SabotageType, ROLE_CONFIGS } from '../types/game';
 
 interface JoinRoomData {
   roomCode: string;
@@ -33,6 +33,14 @@ interface ChatData {
 
 interface SabotageData {
   type: SabotageType;
+}
+
+interface InvestigateData {
+  targetId: string;
+}
+
+interface HunterEliminateData {
+  targetId: string;
 }
 
 export function initializeSocket(io: Server, gameService: GameService): void {
@@ -294,6 +302,58 @@ export function initializeSocket(io: Server, gameService: GameService): void {
 
       io.to(game.id).emit('game_state_update', serializeGame(game));
       console.log(`💣 Sabotage ${data.type} by ${player.username}`);
+    });
+
+    // Investigate (detective only)
+    socket.on('investigate', async (data: InvestigateData) => {
+      const result = await gameService.investigate(socket.id, data.targetId);
+      
+      if (!result.success) {
+        socket.emit('error', { message: 'Investigation failed' });
+        return;
+      }
+
+      // Send investigation result only to the investigator
+      socket.emit('investigation_result', {
+        targetPlayerId: result.result!.targetId,
+        targetRole: result.result!.role,
+        targetTeam: result.result!.team,
+        investigatorId: socket.id,
+        timestamp: Date.now()
+      });
+
+      console.log(`🔍 Detective investigated ${data.targetId}`);
+    });
+
+    // Hunter elimination (when hunter dies)
+    socket.on('hunter_eliminate', async (data: HunterEliminateData) => {
+      const game = gameService.getPlayerGame(socket.id);
+      if (!game) return;
+
+      const result = await gameService.hunterEliminate(socket.id, data.targetId);
+      
+      if (!result.success) {
+        socket.emit('error', { message: 'Hunter elimination failed' });
+        return;
+      }
+
+      // Notify all players
+      io.to(game.id).emit('hunter_elimination', {
+        hunterId: socket.id,
+        targetId: data.targetId,
+        timestamp: Date.now()
+      });
+
+      io.to(game.id).emit('game_state_update', serializeGame(game));
+
+      // Check win condition after elimination
+      const winner = gameService.checkWinCondition(game);
+      if (winner) {
+        await gameService.endGame(game.id, winner);
+        io.to(game.id).emit('game_ended', { winner });
+      }
+
+      console.log(`🎯 Hunter eliminated ${data.targetId}`);
     });
 
     // Disconnect

@@ -20,6 +20,75 @@ enum PlayerRole: String, Codable {
     case cat = "cat"
     case dog = "dog"
     case fox = "fox"
+    case detective = "detective"
+    case hunter = "hunter"
+    
+    var displayName: String {
+        switch self {
+        case .cat: return "猫咪"
+        case .dog: return "狗狗"
+        case .fox: return "狐狸"
+        case .detective: return "侦探"
+        case .hunter: return "猎人"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .cat: return "🐱"
+        case .dog: return "🐶"
+        case .fox: return "🦊"
+        case .detective: return "🕵️"
+        case .hunter: return "🎯"
+        }
+    }
+    
+    var team: PlayerTeam {
+        switch self {
+        case .cat, .detective, .hunter: return .good
+        case .dog: return .bad
+        case .fox: return .neutral
+        }
+    }
+    
+    var hasAbility: Bool {
+        switch self {
+        case .dog, .fox, .detective, .hunter: return true
+        case .cat: return false
+        }
+    }
+    
+    var abilityDescription: String {
+        switch self {
+        case .cat: return "完成任务，找出卧底"
+        case .dog: return "可以发动破坏"
+        case .fox: return "存活到最后单独胜利"
+        case .detective: return "每轮会议可调查一人身份"
+        case .hunter: return "死亡时可淘汰一名玩家"
+        }
+    }
+}
+
+enum PlayerTeam: String, Codable {
+    case good = "good"
+    case bad = "bad"
+    case neutral = "neutral"
+    
+    var displayName: String {
+        switch self {
+        case .good: return "好人阵营"
+        case .bad: return "坏人阵营"
+        case .neutral: return "中立阵营"
+        }
+    }
+    
+    var color: String {
+        switch self {
+        case .good: return "#4A90E2"
+        case .bad: return "#E74C3C"
+        case .neutral: return "#F39C12"
+        }
+    }
 }
 
 struct Player: Identifiable, Codable {
@@ -30,10 +99,25 @@ struct Player: Identifiable, Codable {
     var position: Position
     var tasksCompleted: Int
     var isHost: Bool
+    // Special abilities
+    var investigationsRemaining: Int?
+    var hasUsedHunterAbility: Bool?
     
     struct Position: Codable {
         let x: Double
         let y: Double
+    }
+    
+    var canUseAbility: Bool {
+        guard let role = role else { return false }
+        switch role {
+        case .detective:
+            return (investigationsRemaining ?? 0) > 0
+        case .hunter:
+            return !(hasUsedHunterAbility ?? false)
+        default:
+            return false
+        }
     }
 }
 
@@ -64,8 +148,26 @@ struct GameState: Codable {
         let playerCount: Int
         let dogCount: Int
         let foxCount: Int
+        let detectiveCount: Int
+        let hunterCount: Int
         let taskCount: Int
+        let votingTime: Int
+        let discussionTime: Int
     }
+}
+
+struct InvestigationResult: Codable {
+    let targetPlayerId: String
+    let targetRole: PlayerRole
+    let targetTeam: PlayerTeam
+    let investigatorId: String
+    let timestamp: TimeInterval
+}
+
+struct HunterElimination: Codable {
+    let hunterId: String
+    let targetId: String
+    let timestamp: TimeInterval
 }
 
 @MainActor
@@ -190,6 +292,14 @@ class GameStateManager: ObservableObject {
     
     func performSabotage(type: SabotageType) {
         socketManager?.performSabotage(type: type)
+    }
+    
+    func investigate(targetId: String) {
+        socketManager?.investigate(targetId: targetId)
+    }
+    
+    func hunterEliminate(targetId: String) {
+        socketManager?.hunterEliminate(targetId: targetId)
     }
 }
 

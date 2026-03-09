@@ -1,12 +1,14 @@
 import { RedisClientType } from 'redis';
 import { v4 as uuidv4 } from 'uuid';
-import { GameState, Player, Role, GamePhase, Task, GameSettings, Sabotage, Vote } from '../types/game';
+import { GameState, Player, Role, GamePhase, Task, GameSettings, Sabotage, Vote, ROLE_CONFIGS } from '../types/game';
 
 const DEFAULT_SETTINGS: GameSettings = {
   mapId: 'map1',
   playerCount: 4,
   dogCount: 1,
   foxCount: 0,
+  detectiveCount: 0,
+  hunterCount: 0,
   taskCount: 10,
   votingTime: 30000,
   discussionTime: 60000
@@ -178,19 +180,37 @@ export class GameService {
 
     let index = 0;
 
-    // Assign dogs
+    // Assign dogs (bad guys)
     for (let i = 0; i < game.settings.dogCount; i++) {
       shuffled[index].role = Role.DOG;
       index++;
     }
 
-    // Assign foxes
+    // Assign foxes (neutral)
     for (let i = 0; i < game.settings.foxCount; i++) {
       shuffled[index].role = Role.FOX;
       index++;
     }
 
-    // Rest are cats
+    // Assign detectives (good with ability)
+    for (let i = 0; i < game.settings.detectiveCount; i++) {
+      if (index < shuffled.length) {
+        shuffled[index].role = Role.DETECTIVE;
+        shuffled[index].investigationsRemaining = 3; // 3 investigations per game
+        index++;
+      }
+    }
+
+    // Assign hunters (good with ability)
+    for (let i = 0; i < game.settings.hunterCount; i++) {
+      if (index < shuffled.length) {
+        shuffled[index].role = Role.HUNTER;
+        shuffled[index].hasUsedHunterAbility = false;
+        index++;
+      }
+    }
+
+    // Rest are cats (basic good guys)
     while (index < shuffled.length) {
       shuffled[index].role = Role.CAT;
       index++;
@@ -279,25 +299,43 @@ export class GameService {
     const cats = alivePlayers.filter(p => p.role === Role.CAT);
     const dogs = alivePlayers.filter(p => p.role === Role.DOG);
     const foxes = alivePlayers.filter(p => p.role === Role.FOX);
+    const detectives = alivePlayers.filter(p => p.role === Role.DETECTIVE);
+    const hunters = alivePlayers.filter(p => p.role === Role.HUNTER);
+    
+    // Good team includes cats, detectives, and hunters
+    const goodTeam = [...cats, ...detectives, ...hunters];
 
-    // All dogs eliminated - Cats win
+    // All dogs eliminated - Good team wins
     if (dogs.length === 0) {
-      return 'cats';
+      // Check if fox is still alive (fox wins alone if survives to end)
+      if (foxes.length > 0 && goodTeam.length === 0) {
+        return 'fox';
+      }
+      return 'cats'; // Good team wins
     }
 
-    // Dogs equal or outnumber cats - Dogs win
-    if (dogs.length >= cats.length) {
+    // Dogs equal or outnumber good team - Dogs win
+    if (dogs.length >= goodTeam.length) {
       return 'dogs';
     }
 
-    // All tasks completed - Cats win
+    // All tasks completed - Good team wins
     const allTasksCompleted = game.tasks.every(t => t.isCompleted);
     if (allTasksCompleted) {
+      // Check if fox is still alive
+      if (foxes.length > 0 && goodTeam.length === 0) {
+        return 'fox';
+      }
       return 'cats';
     }
 
-    // Fox survives to end (checked when only fox remains)
-    if (foxes.length > 0 && cats.length === 0 && dogs.length === 0) {
+    // Fox special win condition: survives when only fox and dogs remain
+    if (foxes.length > 0 && goodTeam.length === 0 && dogs.length > 0) {
+      return 'fox';
+    }
+
+    // Fox survives when only fox remains (last one standing)
+    if (foxes.length === 1 && goodTeam.length === 0 && dogs.length === 0) {
       return 'fox';
     }
 
@@ -365,5 +403,93 @@ export class GameService {
     
     this.games.set(gameId, game);
     return game;
+  }
+
+  // Detective investigation ability
+  async investigate(socketId: string, targetId: string): Promise<{ success: boolean; result?: { targetId: string; role: Role; team: 'good' | 'bad' | 'neutral' } }> {
+    const gameId = this.playerToGame.get(socketId);
+    if (!gameId) return { success: false };
+
+    const game = this.games.get(gameId);
+    if (!game || game.phase !== GamePhase.PLAYING) return { success: false };
+
+    const investigator = Array.from(game.players.values()).find(p => p.socketId === socketId);
+    if (!investigator || !investigator.isAlive || investigator.role !== Role.DETECTIVE) {
+      return { success: false }; // Only detective can investigate
+    }
+
+    if (!investigator.investigationsRemaining || investigator.investigationsRemaining <= 0) {
+      return { success: false }; // No investigations left
+    }
+
+    const target = game.players.get(targetId);
+    if (!target || !target.isAlive) {
+      return { success: false }; // Invalid target
+    }
+
+    // Perform investigation
+    investigator.investigationsRemaining--;
+    if (!target.investigatedBy) {
+      target.investigatedBy = [];
+    }
+    target.investigatedBy.push(investigator.id);
+
+    const roleConfig = ROLE_CONFIGS[target.role];
+    const result = {
+      targetId: target.id,
+      role: target.role,
+      team: roleConfig.team
+    };
+
+    return { success: true, result };
+  }
+
+  // Hunter elimination ability (when dying)
+  async hunterEliminate(socketId: string, targetId: string): Promise<{ success: boolean; eliminatedPlayer?: Player }> {
+    const gameId = this.playerToGame.get(socketId);
+    if (!gameId) return { success: false };
+
+    const game = this.games.get(gameId);
+    if (!game) return { success: false };
+
+    const hunter = Array.from(game.players.values()).find(p => p.socketId === socketId);
+    if (!hunter || hunter.role !== Role.HUNTER) {
+      return { success: false }; // Only hunter can use this ability
+    }
+
+    if (hunter.hasUsedHunterAbility) {
+      return { success: false }; // Already used
+    }
+
+    const target = game.players.get(targetId);
+    if (!target || !target.isAlive) {
+      return { success: false }; // Invalid target
+    }
+
+    // Eliminate target
+    target.isAlive = false;
+    hunter.hasUsedHunterAbility = true;
+
+    await this.saveGameToRedis(game);
+    return { success: true, eliminatedPlayer: target };
+  }
+
+  // Handle player death (trigger hunter ability if applicable)
+  async handlePlayerDeath(gameId: string, playerId: string): Promise<{ hunterElimination?: Player }> {
+    const game = this.games.get(gameId);
+    if (!game) return {};
+
+    const player = game.players.get(playerId);
+    if (!player) return {};
+
+    // Check if player is hunter and hasn't used ability
+    if (player.role === Role.HUNTER && !player.hasUsedHunterAbility) {
+      // Hunter can eliminate someone when dying
+      // This is handled separately via hunter_eliminate socket event
+      // Return hunter info so client knows to trigger ability
+      return { hunterElimination: player };
+    }
+
+    return {};
   }
 }

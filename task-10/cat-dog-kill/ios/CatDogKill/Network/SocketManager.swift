@@ -26,6 +26,8 @@ class SocketManager: NSObject {
     var onGameEnded: ((String) -> Void)?
     var onError: ((String) -> Void)?
     var onChatMessage: ((String, String, String) -> Void)? // playerId, username, message
+    var onInvestigationResult: ((InvestigationResult) -> Void)?
+    var onHunterElimination: ((HunterElimination) -> Void)?
     
     init(serverURL: String = "ws://localhost:3000") {
         self.serverURL = serverURL
@@ -103,6 +105,18 @@ class SocketManager: NSObject {
     func performSabotage(type: String) {
         sendEvent("sabotage", data: [
             "type": type
+        ])
+    }
+    
+    func investigate(targetId: String) {
+        sendEvent("investigate", data: [
+            "targetId": targetId
+        ])
+    }
+    
+    func hunterEliminate(targetId: String) {
+        sendEvent("hunter_eliminate", data: [
+            "targetId": targetId
         ])
     }
     
@@ -196,6 +210,36 @@ class SocketManager: NSObject {
                 onChatMessage?(playerId, username, message)
             }
             
+        case "investigation_result":
+            if let targetPlayerId = data["targetPlayerId"] as? String,
+               let targetRoleStr = data["targetRole"] as? String,
+               let targetRole = PlayerRole(rawValue: targetRoleStr),
+               let targetTeamStr = data["targetTeam"] as? String,
+               let targetTeam = PlayerTeam(rawValue: targetTeamStr),
+               let investigatorId = data["investigatorId"] as? String,
+               let timestamp = data["timestamp"] as? TimeInterval {
+                let result = InvestigationResult(
+                    targetPlayerId: targetPlayerId,
+                    targetRole: targetRole,
+                    targetTeam: targetTeam,
+                    investigatorId: investigatorId,
+                    timestamp: timestamp
+                )
+                onInvestigationResult?(result)
+            }
+            
+        case "hunter_elimination":
+            if let hunterId = data["hunterId"] as? String,
+               let targetId = data["targetId"] as? String,
+               let timestamp = data["timestamp"] as? TimeInterval {
+                let elimination = HunterElimination(
+                    hunterId: hunterId,
+                    targetId: targetId,
+                    timestamp: timestamp
+                )
+                onHunterElimination?(elimination)
+            }
+            
         default:
             print("Unhandled event: \(event)")
         }
@@ -222,7 +266,11 @@ class SocketManager: NSObject {
             playerCount: settingsDict["playerCount"] as? Int ?? 4,
             dogCount: settingsDict["dogCount"] as? Int ?? 1,
             foxCount: settingsDict["foxCount"] as? Int ?? 0,
-            taskCount: settingsDict["taskCount"] as? Int ?? 10
+            detectiveCount: settingsDict["detectiveCount"] as? Int ?? 0,
+            hunterCount: settingsDict["hunterCount"] as? Int ?? 0,
+            taskCount: settingsDict["taskCount"] as? Int ?? 10,
+            votingTime: settingsDict["votingTime"] as? Int ?? 30000,
+            discussionTime: settingsDict["discussionTime"] as? Int ?? 60000
         )
         
         return GameState(id: id, code: code, phase: phase, players: players, tasks: tasks, settings: settings)
@@ -240,8 +288,20 @@ class SocketManager: NSObject {
         
         let role = (dict["role"] as? String).flatMap { PlayerRole(rawValue: $0) }
         let position = Player.Position(x: posDict["x"] ?? 0, y: posDict["y"] ?? 0)
+        let investigationsRemaining = dict["investigationsRemaining"] as? Int
+        let hasUsedHunterAbility = dict["hasUsedHunterAbility"] as? Bool
         
-        return Player(id: id, username: username, role: role, isAlive: isAlive, position: position, tasksCompleted: tasksCompleted, isHost: isHost)
+        return Player(
+            id: id,
+            username: username,
+            role: role,
+            isAlive: isAlive,
+            position: position,
+            tasksCompleted: tasksCompleted,
+            isHost: isHost,
+            investigationsRemaining: investigationsRemaining,
+            hasUsedHunterAbility: hasUsedHunterAbility
+        )
     }
     
     private func parseTask(_ dict: [String: Any]) -> Task? {
